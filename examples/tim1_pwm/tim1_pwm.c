@@ -120,12 +120,17 @@ int main()
 	printf("done.\n\r");
 		
 	printf("looping...\n\r");
+
+	uint32_t step = 196;
+	uint32_t next_tick = SysTick->CNT;
 	while(1)
 	{
+		while(((int32_t) (SysTick->CNT - next_tick)) < 0);
 		t1pwm_setpw(0, count); // Chl 1
-		t1pwm_setpw(3, (count + 128)&255);	// Chl 4
+		next_tick += step;
+		//t1pwm_setpw(3, (count + 128)&255);	// Chl 4
 		count++;
 		count &= 255;
-		Delay_Ms( 5 );
+		//Delay_Ms( 5 );
 	}
 }
