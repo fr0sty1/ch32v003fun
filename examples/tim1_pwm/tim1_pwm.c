@@ -5,6 +5,11 @@
 
 #include "ch32v003fun.h"
 #include <stdio.h>
+#include "audio.h"
+
+
+
+
 
 /*
  * initialize TIM1 for PWM
@@ -113,6 +118,9 @@ int main()
 	Delay_Ms( 100 );
 
 	printf("\r\r\n\ntim1_pwm example\n\r");
+
+	// init sintab
+	initsintab();
 
 	// init TIM1 for PWM
 	printf("initializing tim1...");
