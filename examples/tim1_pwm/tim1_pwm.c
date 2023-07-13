@@ -39,7 +39,11 @@ void t1pwm_init( void )
 	TIM1->PSC = 0x0000;
 	
 	// Auto Reload - sets period
-	TIM1->ATRLR = 255;
+	// 10,000,000 / 44,100 = 226.757369615
+	// 10,000,000 / 256 = 39,062.5 PWM frequency
+	// 10,000,000 / 128 = 78,125   PWM frequency
+	// 10,000,000 / 100 = 100,000  PWM frequency
+	TIM1->ATRLR = 255;	
 	
 	// Reload immediately
 	TIM1->SWEVGR |= TIM_UG;
@@ -119,15 +123,14 @@ int main()
 
 	printf("\r\r\n\ntim1_pwm example\n\r");
 
-	// init sintab
-	initsintab();
-
 	// init TIM1 for PWM
 	printf("initializing tim1...");
 	t1pwm_init();
 	printf("done.\n\r");
 		
 	printf("looping...\n\r");
+
+	audio_initialize();
 
 	uint32_t step = 196;
 	uint32_t next_tick = SysTick->CNT;
@@ -141,4 +144,7 @@ int main()
 		count &= 255;
 		//Delay_Ms( 5 );
 	}
+
+	audio_release();
 }
+ 
