@@ -15,14 +15,18 @@
 #ifndef AUDIO_LIBRARY
 #define AUDIO_LIBRARY
 
-#define AUDIO_CHANNELS 1
-#define AUDIO_VOICES 4
+#define AUDIO_CHANNELS (1)
+#define AUDIO_VOICES (4)
+#define AUDIO_UPDATE_FREQUENCY (44100)
 
-#define SINTABLEN 256
+//#define SINTABLEN 256
 
 
 // Audio library structures
 
+// AL_Waveform
+// A waveform returns a value for a 16 bit position 
+// representing a single cycle
 typedef struct 
 {
     uint16_t length;
@@ -30,8 +34,11 @@ typedef struct
     char (*read)(uint16_t position);
 } AL_Waveform; 
 
+// AL_Envelope
+// A sequence of volume ramps to shape a waveform 
 typedef struct  
 {
+    // todo key down, sustain, key up
     uint16_t phases;    // number of envelope phases (eg ADSR = 4)
     uint16_t phase;     // current phase
 
@@ -44,6 +51,8 @@ typedef struct
     uint16_t volume;    // current volume of the envelope
 } AL_Envelope;
 
+// AL_Instrument
+// The components that describe an instrument
 typedef struct 
 {
     AL_Waveform *waveform;
@@ -52,6 +61,8 @@ typedef struct
     // todo tremelo
 } AL_Instrument;
 
+// AL_Voice
+// A voice plays a single instrument
 typedef struct AL_Voice
 {
     uint16_t position;  // position in wave table fixed point 0 to 1
@@ -67,12 +78,20 @@ typedef struct AL_Voice
     void (*setfrequency)(struct AL_Voice *this,uint16_t frequency);
 } AL_Voice;
 
+// AL Channel
+// A channel is a polyphonic physical output (e.g. a single PWM pin)
 typedef struct 
 {
-    AL_Voice *voices;
-    uint16_t numvoices;
+    AL_Voice voices[AUDIO_VOICES];
+    uint16_t volume;
+    uint16_t combinedvolume;
+} AL_Channel;
+
+typedef struct 
+{
+    AL_Channel channel[AUDIO_CHANNELS];
     uint16_t mastervolume;
-} AL_Mix;
+} AL_System;
 
 char getsin(uint16_t a);
 
@@ -85,7 +104,8 @@ char getsin(uint16_t a);
 // initialize audio library
 void audio_initialize( void );
 
-unsigned char audio_update( uint32_t systime );
+void audio_update();
+unsigned char audio_getchannelvalue(uint16_t channel);
 
 // shutdown audio library and release resources
 void audio_release( void );

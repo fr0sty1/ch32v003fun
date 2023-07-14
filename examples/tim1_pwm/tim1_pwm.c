@@ -23,6 +23,10 @@ void t1pwm_init( void )
 	// PD0 is T1CH1N, 10MHz Output alt func, push-pull
 	GPIOD->CFGLR &= ~(0xf<<(4*0));
 	GPIOD->CFGLR |= (GPIO_Speed_10MHz | GPIO_CNF_OUT_PP_AF)<<(4*0);
+
+	// GPIO D4 Push-Pull
+	GPIOD->CFGLR &= ~(0xf<<(4*4));
+	GPIOD->CFGLR |= (GPIO_Speed_10MHz | GPIO_CNF_OUT_PP)<<(4*4);
 	
 	// PC4 is T1CH4, 10MHz Output alt func, push-pull
 	GPIOC->CFGLR &= ~(0xf<<(4*4));
@@ -116,7 +120,7 @@ void t1pwm_force(uint8_t chl, uint8_t val)
  */
 int main()
 {
-	uint32_t count = 0;
+	//uint32_t count = 0;
 	
 	SystemInit();
 	Delay_Ms( 100 );
@@ -132,17 +136,39 @@ int main()
 
 	audio_initialize();
 
-	uint32_t step = 196;
-	uint32_t next_tick = SysTick->CNT;
+	//SysTick->CNT 42.17us = 256 -> 6070666.35049 Hz 
+	uint32_t step = (6000000/44100)+1;
+	uint32_t next_tick = SysTick->CNT+step;
+	
 	while(1)
 	{
+		if ((next_tick - SysTick->CNT) & 0x80000000 )
+		{
+			GPIOD->BSHR = (1<<4);	 // Turn on D4
+			next_tick+=step;
+			audio_update();
+			t1pwm_setpw(0, audio_getchannelvalue(0));
+			GPIOD->BSHR = (1<<(16+4)); // Turn off D4
+			
+		}
+		
+/*
+		if (SysTick->CNT&0x100) 
+			GPIOD->BSHR = (1<<4);
+		else
+			GPIOD->BSHR = (1<<(16+4));
+*/
+
+
 		//t1pwm_setpw(0, (count>>8)&255); // Chl 1
-		t1pwm_setpw(0, audio_update(SysTick->CNT));
-		t1pwm_setpw(3, (SysTick->CNT&0x00001000? 255:0));	// Chl 4
-		count++;
+		
+		//t1pwm_setpw(3, (SysTick->CNT&0x00001000? 255:0));	// Chl 4
+		//count++;
 		//count &= 255;
+		//Delay_Ms( 5 );
 	}
 
+/*
 	while(1)
 	{
 		while(((int32_t) (SysTick->CNT - next_tick)) < 0);
@@ -154,5 +180,6 @@ int main()
 		//Delay_Ms( 5 );
 	}
 	audio_release();
+*/
 }
  

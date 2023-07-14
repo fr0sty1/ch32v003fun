@@ -24,7 +24,6 @@ unsigned char quartersintab[256]={
         255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
 };
 
-
 unsigned char getqsin(uint16_t a)
 {
     uint16_t ai=(a>>6)& 0xff;
@@ -73,7 +72,7 @@ uint16_t update(AL_Voice *v)
     return 0;
 }
 
-
+/*
 void updatemix(AL_Mix *this)
 {
     uint32_t mixvalue=0;
@@ -84,20 +83,43 @@ void updatemix(AL_Mix *this)
     mixvalue*=this->mastervolume;
     mixvalue>>=8;
 }
+*/
+
+static unsigned char value;
 
 // initialize audio library
 void audio_initialize( void )
 {
     printf("Audio initialize\n");
+    value=0;
 }
 
-// Audio update
-unsigned char audio_update( uint32_t systime )
+// Audio update, call 44100 times a second
+void audio_update( void )
 {
-    //static uint32_t lastsystime;
-    //if ((systime/lasystime)>    
+    // update master
+    //master->update();
 
-    return getqsin(systime);
+    static uint16_t envelopedivider;
+    if (--envelopedivider==0)
+    {
+        envelopedivider=441;    // 10ms
+        // envelope update
+    }
+
+    //value^=0xff;
+    value+=1;
+    return value;
+
+    //return getqsin(systime);
+}
+
+// Get the value of an output pin
+unsigned char audio_getchannelvalue(uint16_t channel)
+{   
+    // todo
+    // todo should it be calculated in update or in here?
+    return 0;
 }
 
 // shutdown audio library and release resources
