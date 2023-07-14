@@ -136,6 +136,15 @@ int main()
 	uint32_t next_tick = SysTick->CNT;
 	while(1)
 	{
+		//t1pwm_setpw(0, (count>>8)&255); // Chl 1
+		t1pwm_setpw(0, audio_update(SysTick->CNT));
+		t1pwm_setpw(3, (SysTick->CNT&0x00001000? 255:0));	// Chl 4
+		count++;
+		//count &= 255;
+	}
+
+	while(1)
+	{
 		while(((int32_t) (SysTick->CNT - next_tick)) < 0);
 		t1pwm_setpw(0, count); // Chl 1
 		next_tick += step;
@@ -144,7 +153,6 @@ int main()
 		count &= 255;
 		//Delay_Ms( 5 );
 	}
-
 	audio_release();
 }
  

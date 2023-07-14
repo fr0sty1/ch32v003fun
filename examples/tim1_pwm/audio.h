@@ -85,7 +85,7 @@ char getsin(uint16_t a);
 // initialize audio library
 void audio_initialize( void );
 
-void audio_update( int32_t systime );
+unsigned char audio_update( uint32_t systime );
 
 // shutdown audio library and release resources
 void audio_release( void );
