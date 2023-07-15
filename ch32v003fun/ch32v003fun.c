@@ -999,12 +999,19 @@ void SystemInit()
 #else
 	#define HSEBYP 0
 #endif
+// set the correct clock source for the PLL
+#if defined(FUNCONF_USE_HSE) && FUNCONF_USE_HSE
+    #define PLL_SRC RCC_PLLSRC_HSE_Mul2
+#endif
+#if defined(FUNCONF_USE_HSI) && FUNCONF_USE_HSI
+    #define PLL_SRC RCC_PLLSRC_HSI_Mul2
+#endif
 
-	#if defined(FUNCONF_USE_PLL) && FUNCONF_USE_PLL
-		#define BASE_CFGR0 RCC_HPRE_DIV1 | RCC_PLLSRC_HSI_Mul2    // HCLK = SYSCLK = APB1 And, enable PLL
-	#else
-		#define BASE_CFGR0 RCC_HPRE_DIV1      // HCLK = SYSCLK = APB1 And, no pll.
-	#endif
+#if defined(FUNCONF_USE_PLL) && FUNCONF_USE_PLL
+    #define BASE_CFGR0 (RCC_HPRE_DIV1 | PLL_SRC | RCC_CFGR0_MCO_PLL)    // HCLK = SYSCLK = APB1 And, enable PLL
+#else
+    #define BASE_CFGR0 (RCC_HPRE_DIV1 | RCC_CFGR0_MCO_HSE)     // HCLK = SYSCLK = APB1 And, no pll.
+#endif
 
 #if defined(FUNCONF_USE_HSI) && FUNCONF_USE_HSI
 	#if defined(FUNCONF_USE_PLL) && FUNCONF_USE_PLL
@@ -1018,16 +1025,21 @@ void SystemInit()
 
 #if defined(FUNCONF_USE_HSE) && FUNCONF_USE_HSE
 
-	RCC->CTLR  = RCC_HSION | RCC_HSEON | RCC_PLLON | HSEBYP;       // Keep HSI and PLL on just in case, while turning on HSE
-
-	// Values lifted from the EVT.  There is little to no documentation on what this does.
-	while(!(RCC->CTLR&RCC_HSERDY));
+    RCC->CFGR0 = RCC_HPRE_DIV1;
+    RCC->CTLR  = RCC_HSION | ((FUNCONF_HSITRIM) << 3);             // start with HSI first, no PLL
+    RCC->APB2PCENR |= RCC_APB2Periph_AFIO;                          // enable AFIO
+    AFIO->PCFR1 |= GPIO_Remap_PA1_2;                                // remap PA1 PA2 to XTAL
 
 	#if defined(FUNCONF_USE_PLL) && FUNCONF_USE_PLL
-		RCC->CFGR0 = BASE_CFGR0 | RCC_SW_HSE;
-		RCC->CTLR  = RCC_HSEON | RCC_PLLON | HSEBYP;                    // Turn off HSI.
+        RCC->CTLR  = RCC_HSION | RCC_HSEON | HSEBYP;                // Keep HSI and PLL on just in case, while turning on HSE
+        while(!(RCC->CTLR&RCC_HSERDY));                             // wait until the HSE is ready
+        RCC->CFGR0 = BASE_CFGR0 | RCC_SW_HSE;                       // switch the clock to HSE
+        while ((RCC->CFGR0 & (uint32_t)RCC_SWS) != (uint32_t)0x04); // Wait till HSE is used as system clock source
+		RCC->CTLR  = RCC_HSEON | RCC_PLLON | HSEBYP;                    // Turn off HSI, enable PLL
 	#else
-		RCC->CFGR0 = BASE_CFGR0 | RCC_SW_HSE;
+        RCC->CTLR  = RCC_HSION | RCC_HSEON | HSEBYP;                    // Keep HSI and PLL on just in case, while turning on HSE
+        while(!(RCC->CTLR&RCC_HSERDY));
+        RCC->CFGR0 = BASE_CFGR0 | RCC_SW_HSE;
 		RCC->CTLR  = RCC_HSEON | HSEBYP;                                // Turn off PLL and HSI.
 	#endif
 #endif
@@ -1037,7 +1049,6 @@ void SystemInit()
 #else
 	FLASH->ACTLR = FLASH_ACTLR_LATENCY_0;                   // +0 Cycle Latency
 #endif
-
 
 	RCC->INTR  = 0x009F0000;                               // Clear PLL, CSSC, HSE, HSI and LSI ready flags.
 
@@ -1052,9 +1063,10 @@ void SystemInit()
 	SetupUART( UART_BRR );
 #endif
 #if defined( FUNCONF_USE_DEBUGPRINTF ) && FUNCONF_USE_DEBUGPRINTF
-	SetupDebugPrintf();
+    // Clear out the sending flag.
+	*DMDATA1 = 0x0;
+	*DMDATA0 = 0x80;
 #endif
-
 }
 
 // C++ Support
