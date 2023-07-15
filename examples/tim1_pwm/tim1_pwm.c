@@ -7,10 +7,6 @@
 #include <stdio.h>
 #include "audio.h"
 
-
-
-
-
 /*
  * initialize TIM1 for PWM
  */
@@ -132,54 +128,57 @@ int main()
 	t1pwm_init();
 	printf("done.\n\r");
 		
-	printf("looping...\n\r");
 
+	// Initializ audio system
 	audio_initialize();
 
-	//SysTick->CNT 42.17us = 256 -> 6070666.35049 Hz 
-	uint32_t step = (6000000/44100)+1;
+	extern AL_Instrument audio_instrument_sine;
+	audio_setinstrument(0,0,&audio_instrument_sine);
+	audio_setinstrument(0,1,&audio_instrument_sine);
+	audio_setinstrument(0,2,&audio_instrument_sine);
+
+	// A very pleasant major chord
+	audio_keyon(0,0,200,255);	// channel 0 voice 0 200Hz full volume
+	audio_keyon(0,1,250,255);	// channel 1 voice 0 250Hz full volume
+	audio_keyon(0,2,300,255);	// channel 2 voice 0 300Hz full volume
+
+	// Prepare for 44.1 kHz audio system update 
+	// SysTick->CNT 42.17us = 256 -> 6070666.35049 Hz 
+	uint32_t step = (6000000/AUDIO_UPDATE_FREQUENCY)+1;
 	uint32_t next_tick = SysTick->CNT+step;
 	
+	printf("looping...\n\r");
 	while(1)
 	{
+		// wait for next 44.1 kHz cycle to update audio library
 		if ((next_tick - SysTick->CNT) & 0x80000000 )
 		{
+			// Set profiling bit 
 			GPIOD->BSHR = (1<<4);	 // Turn on D4
+			// Advance target count for next 44.1kHz cycle
 			next_tick+=step;
-			audio_update();
-			t1pwm_setpw(0, audio_getchannelvalue(0));
-			GPIOD->BSHR = (1<<(16+4)); // Turn off D4
 			
+			// update audio driver 
+			audio_update();
+
+			// set channel 0 pwm value	
+			t1pwm_setpw(0, audio_getchannelvalue(0)); // PWM output on pin D0
+			
+			// set channel 1 pwm value
+			//t1pwm_setpw(3, (SysTick->CNT&0x00001000? 255:0));	// Chl 4
+			
+			// clear profiling bit
+			GPIOD->BSHR = (1<<(16+4)); // Turn off D4
 		}
-		
-/*
-		if (SysTick->CNT&0x100) 
-			GPIOD->BSHR = (1<<4);
-		else
-			GPIOD->BSHR = (1<<(16+4));
-*/
 
-
-		//t1pwm_setpw(0, (count>>8)&255); // Chl 1
-		
-		//t1pwm_setpw(3, (SysTick->CNT&0x00001000? 255:0));	// Chl 4
-		//count++;
-		//count &= 255;
-		//Delay_Ms( 5 );
+		// do whatever else your program needs to do here 
+		// but it shouldnt't take more than what's left in the 44.1 Khz cycle
+		// or else audio distortion will result
+		// todo Audio Library needs to use interrupts
+		// todo pin input for 1 button piano
 	}
 
-/*
-	while(1)
-	{
-		while(((int32_t) (SysTick->CNT - next_tick)) < 0);
-		t1pwm_setpw(0, count); // Chl 1
-		next_tick += step;
-		//t1pwm_setpw(3, (count + 128)&255);	// Chl 4
-		count++;
-		count &= 255;
-		//Delay_Ms( 5 );
-	}
+	// Shutdown audio system
 	audio_release();
-*/
 }
  
