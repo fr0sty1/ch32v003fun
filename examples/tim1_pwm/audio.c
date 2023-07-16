@@ -55,6 +55,42 @@ AL_Envelope audio_longenvelope={2,0,audio_longenvelope_deltas,audio_longenvelope
 
 AL_Instrument audio_instrument_sine={ &audio_waveform_sine,&audio_longenvelope};
 
+// multiply an 8 bit unsigned volume by an 8 bit signed sample 
+// returning a signed modulated sample
+int16_t audio_volume_sample_multiply(uint16_t u,int16_t s)
+{
+    uint16_t su = (s>=0) ? (uint16_t) s : -((uint16_t) s);
+    uint16_t ret = 0;
+	uint16_t multiplicand = su; //small_num;
+	uint16_t mutliplicant = u;  //big_num;
+	do
+	{
+		if( multiplicand & 1 )
+			ret += mutliplicant;
+		mutliplicant<<=1;
+		multiplicand>>=1;
+	} while( multiplicand );
+
+	return ((s>=0) ? (int16_t) ret : -((int16_t) ret))>>8;
+}
+
+// multiply 8 bit unsigned volumes by one another, returning an 8 bit volume
+uint16_t audio_volume_volume_multiply(uint16_t v1,uint16_t v2)
+{
+    uint16_t ret = 0;
+	uint16_t multiplicand = v1; //small_num;
+	uint16_t mutliplicant = v2;  //big_num;
+	do
+	{
+		if( multiplicand & 1 )
+			ret += mutliplicant;
+		mutliplicant<<=1;
+		multiplicand>>=1;
+	} while( multiplicand );
+
+	return ret>>8;
+}
+
 /*
 void envelopeupdate(AL_Envelope *envelope)
 {
@@ -81,7 +117,6 @@ void envelopeupdate(AL_Envelope *envelope)
 // initialize audio library
 void audio_initialize( void )
 {
-    printf("Audio initialize\n");
     audio_system.volume=255;
     audio_system.envelopedivider=AUDIO_SHAPE_DIVIDER; 
     for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
@@ -100,6 +135,13 @@ void audio_initialize( void )
             pvoice->instrument=NULL;
         }
     }    
+#ifdef AUDIO_DEBUG
+    printf("Audio initialize\n");
+    printf("Audio system has %d channels, each with %d voices\n",AUDIO_CHANNELS,AUDIO_VOICES);
+    printf("Audio sample update frequency is %d Hz\n",AUDIO_UPDATE_FREQUENCY);
+    printf("Audio shape update frequency is %d Hz\n",AUDIO_UPDATE_FREQUENCY/AUDIO_SHAPE_DIVIDER);
+    printf("sizeof(audio_system)=%d\n",sizeof(audio_system));
+#endif
 }
 
 // Audio update, call 44100 times a second
@@ -204,7 +246,9 @@ void audio_stopvoice(uint16_t channel,
 // shutdown audio library and release resources
 void audio_release( void )
 {
-        printf("Audio release\n");
-        // Nothing to do since audio library is statically allocated 
-        // and update will no longer be called
+#ifdef AUDIO_DEBUG
+    printf("Audio release\n");
+    // Nothing to do since audio library is statically allocated 
+    // and update will no longer be called
+#endif
 }

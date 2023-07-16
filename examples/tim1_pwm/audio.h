@@ -13,13 +13,30 @@
                     Tremelo     Tremelo (cyclic volume modulation)
                     Vibrato     Vibrato (cyclic frequency modulation)
 
+    Definition of done
+        [] Play 4 voice tocata and fugue
+            [] Audio system
+            [] Music playback system
+
     todo 
-        [] Audio library structures and API can play a sound
-        [] Audio update calculates everything
-        [] Play 440 hz sine wave
+        [] envelope processing
         [] Only update volumes when volume updated in update (update flag)
+        [] lookup fast multiply
+            [] look at disassembly of small program 
+            https://github.com/cnlohr/ch32v003fun/blob/master/examples/ws2812bdemo/color_utilities.h
+            FastMultiply
+        [] 4 input pins for 4 voices
+        [] input pins key on/key off for envelope testing
+        [] IRQ for audio processing
+        [] Pivot to single voice for frosty
+
+
+
+        [x] Audio library structures and API can play a sound
+        [x] Audio update calculates everything
+        [x] Play 440 hz sine wave
         [] special case volumes 255 and 0 (#define)
-        [] clip waveform (#define)
+        [-] clip waveform (#define)
         [] Debug #define
 
 */
@@ -34,6 +51,9 @@
 #define AUDIO_UPDATE_FREQUENCY (44100)
 // 44100 Hz /441 = 100 Hz or update every 10MS
 #define AUDIO_SHAPE_DIVIDER (441)
+
+// Uncomment the following line for debugging
+//#define AUDIO_DEBUG
 
 ///////////////////////////////////////////////////////////////////////////////
 // Audio library structures
