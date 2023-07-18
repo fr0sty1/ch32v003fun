@@ -84,9 +84,6 @@ typedef struct
 
     uint16_t  vibrato_amplitude; // vibrato amplitude
     uint16_t  vibrato_delta; // vibrato delta
-    
-    
-
 }AL_ADSR;
 
 // AL_Instrument
@@ -207,7 +204,23 @@ void audio_keyoff(   uint16_t channel,
 void audio_stopvoice(uint16_t channel,
                     uint16_t voice);
          
-// shutdown audio library and release resources
+// Shutdown audio library and release resources
 void audio_release( void );
+
+
+
+
+typedef struct 
+{
+    uint16_t tickduration;  // midi file tick duration in 44100 kHz ticks
+} MIDI_Header;
+
+typedef struct 
+{
+    uint16_t ticks;     // 4 bit track, 12 bit ticks until next note, 0xffff exits
+    uint8_t note;       // 7 bit midi note
+    uint8_t velocity;   // Velocity, 0 for off
+} MIDI_Event;
+
 
 #endif //#ifndef AUDIO_LIBRARY
