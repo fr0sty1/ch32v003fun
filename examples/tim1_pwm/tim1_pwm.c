@@ -137,16 +137,24 @@ int main()
 	audio_setinstrument(0,1,&audio_instrument_sine);
 	audio_setinstrument(0,2,&audio_instrument_sine);
 
-	// A very pleasant major chord
+	
 	audio_keyon(0,0,200,255);	// channel 0 voice 0 200Hz full volume
-	audio_keyon(0,1,250,255);	// channel 1 voice 0 250Hz full volume
-	audio_keyon(0,2,300,255);	// channel 2 voice 0 300Hz full volume
-
+	/*
+	// A very pleasant major chord
+	audio_keyon(0,0,200,255/4);	// channel 0 voice 0 200Hz full volume
+	audio_keyon(0,1,250,255/4);	// channel 1 voice 0 250Hz full volume
+	audio_keyon(0,2,300,255/4);	// channel 2 voice 0 300Hz full volume
+	audio_keyon(0,3,350,255/4);	// channel 2 voice 0 300Hz full volume
+	*/
 	// Prepare for 44.1 kHz audio system update 
 	// SysTick->CNT 42.17us = 256 -> 6070666.35049 Hz 
 	uint32_t step = (6000000/AUDIO_UPDATE_FREQUENCY)+1;
 	uint32_t next_tick = SysTick->CNT+step;
 	
+	uint32_t secondtimer=AUDIO_UPDATE_FREQUENCY;
+	uint16_t keyfrequency=200;
+
+
 	printf("looping...\n\r");
 	while(1)
 	{
@@ -169,6 +177,20 @@ int main()
 			
 			// clear profiling bit
 			GPIOD->BSHR = (1<<(16+4)); // Turn off D4
+
+			if (--secondtimer==0)
+			{
+				secondtimer=AUDIO_UPDATE_FREQUENCY;
+				if (audio_system.channel[0].voice[0].playing)
+				{
+					audio_system.channel[0].voice[0].adsr_phase='r';
+				}
+				else
+				{
+					keyfrequency=(keyfrequency>1000)? 200 : keyfrequency+200;
+					audio_keyon(0,0,keyfrequency,255);	// channel 0 voice 0 freq, velocity
+				}
+			}
 		}
 
 		// do whatever else your program needs to do here 

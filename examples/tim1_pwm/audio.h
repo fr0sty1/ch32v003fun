@@ -53,7 +53,7 @@
 #define AUDIO_SHAPE_DIVIDER (441)
 
 // Uncomment the following line for debugging
-//#define AUDIO_DEBUG
+#define AUDIO_DEBUG
 
 ///////////////////////////////////////////////////////////////////////////////
 // Audio library structures
@@ -71,24 +71,31 @@ typedef struct
 typedef struct  
 {
     // todo key down, sustain, key up
-    uint16_t phases;    // number of envelope phases (eg ADSR = 4)
-    uint16_t phase;     // current phase
-
     uint16_t *deltas;   // list of deltas for volume
     uint16_t *times;    // list of times for deltas
-
-    uint16_t delta;     // current delta
-    uint16_t timer;     // current coundown timer
-
-    uint16_t volume;    // current volume of the envelope
 } AL_Envelope;
+
+typedef struct
+{
+    uint16_t  attack_delta;  // ramp from 0 to max
+    uint16_t  decay_delta;   // ramp from max to sustain value
+    uint16_t sustain_value;  // sustain value
+    uint16_t  release_delta; // ramp from sustain to 0
+
+    uint16_t  vibrato_amplitude; // vibrato amplitude
+    uint16_t  vibrato_delta; // vibrato delta
+    
+    
+
+}AL_ADSR;
 
 // AL_Instrument
 // The components that describe an instrument
 typedef struct 
 {
     AL_Waveform *waveform;
-    AL_Envelope *envelope;  // todo: envelope description and state need to be separate
+    AL_ADSR     *adsr;
+    //AL_Envelope *envelope;  // todo: envelope description and state need to be separate
     // todo vibrato
     // todo tremelo
 } AL_Instrument;
@@ -107,6 +114,9 @@ typedef struct AL_Voice
     uint8_t playing;      // todo all voices play all the time now
 //    uint8_t priority;   // to be used for dynamic voice allocation
  
+    uint8_t adsr_phase;     // current phase
+    int16_t adsr_volume;    // current volume of the envelope
+
     AL_Instrument *instrument;
 
 //    uint16_t (*update)(struct AL_Voice *this);
@@ -118,7 +128,8 @@ typedef struct AL_Voice
 typedef struct 
 {
     AL_Voice voice[AUDIO_VOICES];   // voices in the channel
-    uint16_t volume;                // channel volume
+    uint16_t volume;                // channel set volume
+    uint16_t compositevolume;       // channel volume * master volume
     int16_t  value;                 // value of all voices in the channel
 
 } AL_Channel;
@@ -129,6 +140,8 @@ typedef struct
     AL_Channel channel[AUDIO_CHANNELS]; // polyphonic sound channels
     uint16_t volume;                    // master volume
     uint16_t envelopedivider;           // for lower frequency shaping processing
+    uint8_t flags;
+#define AL_SYSTEM_FLAG_UPDATE_VOLUME (1<<0)
 } AL_System;
 
 extern AL_System audio_system;
@@ -147,18 +160,26 @@ unsigned char audio_getchannelvalue(uint16_t channel);
 
 // Set audio system master volume
 inline void audio_setmastervolume(uint16_t volume ) 
-    {audio_system.volume=volume;}
+{
+    audio_system.volume=volume;
+    audio_system.flags|=AL_SYSTEM_FLAG_UPDATE_VOLUME;
+}
 
 // Set audio system channel volume
 inline void audio_setchannelvolume(uint16_t channel,
                             uint16_t volume )
-    {audio_system.channel[channel].volume=volume;}
+{
+    audio_system.channel[channel].volume=volume;
+    audio_system.flags|=AL_SYSTEM_FLAG_UPDATE_VOLUME;
+}
 
 // Set audio system voice volume
 inline void audio_setvoicevolume(uint16_t channel,
                           uint16_t voice,
                           uint16_t volume )
-   {audio_system.channel[channel].voice[voice].volume=volume;}
+{
+    audio_system.channel[channel].voice[voice].volume=volume;
+}
 
 // Set audio system voice volume
 inline void audio_setvoicepitchbend(uint16_t channel,

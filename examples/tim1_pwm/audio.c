@@ -1,14 +1,37 @@
 
 #include "ch32v003fun.h"
 #include "audio.h"
-#include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
 
 // Audio system instance
 AL_System audio_system;
 
-#define PI 3.14159265
+// sawtooth sampler
+int8_t audio_waveformsaw(uint16_t index)
+{
+    return (int8_t) (index>>8);
+}
+
+// square wave sampler
+int8_t audio_waveformsquare(uint16_t index)
+{
+    return (index& 0x8000)?-127:127;
+}
+
+// triangle sampler
+int8_t audio_waveformtriangle(uint16_t index)
+{
+    if (index&0x8000)
+    {
+        return -((int8_t) (((index>>7)&0xff)))-129;
+    }
+    else
+    {
+        return (int8_t) (((index>>7)&0xff))+128;
+    }
+} 
+
 // redo quarter sintab to be signed 0 center
 int8_t quartersintab[256]={
         0,0,1,2,3,3,4,5,6,7,7,8,9,10,10,11,
@@ -46,14 +69,17 @@ int8_t audio_waveformsine(uint16_t index)
             return -(quartersintab[255-tableindex]);
     }
 }
-
 AL_Waveform audio_waveform_sine={audio_waveformsine};
 
-uint16_t audio_longenvelope_deltas[2]={0,0};
-uint16_t audio_longenvelope_times[2]={0xffff,0};
-AL_Envelope audio_longenvelope={2,0,audio_longenvelope_deltas,audio_longenvelope_times,1,10,0};
+// min 10ms
+#define ADSR_RAMP_MS(ms) (256/((ms)/10))
+#define ADSR_VOLUME(pct) (255*(pct)/100)
 
-AL_Instrument audio_instrument_sine={ &audio_waveform_sine,&audio_longenvelope};
+// attack delta, decay delta, sustain value, release delta, vibrato amplitude, vibrato delta
+AL_ADSR audio_adsr_on={256,0,255,-255,0,0};
+AL_ADSR audio_adsr_piano={ADSR_RAMP_MS(10),ADSR_RAMP_MS(100),255*.66,ADSR_RAMP_MS(900),0,0};  
+
+AL_Instrument audio_instrument_sine={ &audio_waveform_sine,&audio_adsr_piano};
 
 // multiply an 8 bit unsigned volume by an 8 bit signed sample 
 // returning a signed modulated sample
@@ -90,30 +116,6 @@ uint16_t audio_volume_volume_multiply(uint16_t v1,uint16_t v2)
 
 	return ret>>8;
 }
-
-/*
-void envelopeupdate(AL_Envelope *envelope)
-{
-    if (envelope->timer) 
-    {
-        envelope->volume+=envelope->delta;
-        if (--envelope->timer==0) 
-        {
-            if (++envelope->phase < envelope->phases) 
-            {
-                envelope->delta=envelope->deltas[envelope->phase];
-                envelope->timer=envelope->times[envelope->phase];
-            }
-            else
-            {
-                envelope->delta=0;
-                envelope->timer=0;
-            }
-        }
-    }
-}
-*/
-
 // initialize audio library
 void audio_initialize( void )
 {
@@ -147,12 +149,19 @@ void audio_initialize( void )
 // Audio update, call 44100 times a second
 void audio_update( void )
 {
+
     // update timers of all voice playback parameters
     for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
     {
         AL_Channel *pchannel=&audio_system.channel[channel];
         // calculate combined master and channel volume
-        //uint32_t channelvolume=(audio_system.volume*pchannel->volume)>>8;
+        if ( audio_system.flags&AL_SYSTEM_FLAG_UPDATE_VOLUME)
+        {         
+            //pchannel->compositevolume=audio_volume_volume_multiply(audio_system.volume,pchannel->volume);
+            audio_system.flags&=~AL_SYSTEM_FLAG_UPDATE_VOLUME;
+            printf("setting volumes\n");
+        }
+
         pchannel->value=0;
         for (uint16_t voice=0;voice<AUDIO_VOICES; ++voice)
         {
@@ -162,12 +171,13 @@ void audio_update( void )
                 if (pvoice->instrument!=NULL)
                 {
                     // there is an instrument, process
-                    //uint32_t voicevolume=(channelvolume*pvoice->volume)>>8;                
+                    //uint16_t compositevolume=audio_volume_sample_multiply(pchannel->compositevolume,pvoice->volume);              
                     pvoice->position+=pvoice->delta;
                     int16_t sample = (int16_t) pvoice->instrument->waveform->sample(pvoice->position+pvoice->pitchbend);
-                    //pvoice->value=char ((sample*voicevolume)>>8);
-                    //pvoice->value= ((sample*voicevolume)>>8);
-                    pvoice->value= sample;
+                    //pvoice->value=audio_volume_sample_multiply(compositevolume, sample);
+                    pvoice->value=audio_volume_sample_multiply(pvoice->volume, sample);
+                    //pvoice->value=((int16_t) pvoice->volume * sample)>>8;
+                    //printf("%d %d\n",voice,pvoice->volume);
                 }
                 else
                 {
@@ -192,14 +202,69 @@ void audio_update( void )
                 pchannel->value+=pvoice->value;
             }
         }
-        pchannel->value>>=AUDIO_VOICES_POW2;
+        //pchannel->value>>=AUDIO_VOICES_POW2;
     }
 
      // update audio shape
+    // todo could process updates in phases 
+        // one to composite volumes
+        // one for each voice of each channel
+        // one to commit values
     if (--audio_system.envelopedivider==0)
     {
         audio_system.envelopedivider=AUDIO_SHAPE_DIVIDER;    // 10ms
         // envelope update
+        for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
+        {
+            AL_Channel *pchannel=&audio_system.channel[channel];
+            for (uint16_t voice=0;voice<AUDIO_VOICES; ++voice)
+            {
+                AL_Voice *pvoice=&pchannel->voice[voice];
+                AL_ADSR *padsr=pvoice->instrument->adsr;
+                switch (pvoice->adsr_phase)
+                {
+                    case 'a':
+
+                        pvoice->adsr_volume+=padsr->attack_delta;
+                        if (pvoice->adsr_volume>=255)
+                        {
+                            pvoice->adsr_phase='d';
+                            pvoice->adsr_volume=255;
+                        }
+                        //printf("attack %d\n",pvoice->adsr_volume);
+                        break;
+                    case 'd':
+                        pvoice->adsr_volume-=padsr->decay_delta;
+                        if ((pvoice->adsr_volume <= padsr->sustain_value) || (pvoice->adsr_volume & 0x8000))
+                        {
+                            pvoice->adsr_phase='s';
+                            pvoice->adsr_volume=padsr->sustain_value;
+                        }
+                        //printf("decay %d\n",pvoice->adsr_volume);
+                        break;
+                    case 's':
+                        // sustain does nothing but waits for a key release
+                        //printf("sustain %d\n",pvoice->adsr_volume);
+                        break;
+                    case 'r':
+                        pvoice->adsr_volume-=padsr->release_delta;
+                        if (pvoice->adsr_volume & 0x8000)
+                        {
+                            pvoice->adsr_phase="x";
+                            pvoice->adsr_volume=0;
+                            pvoice->playing=false;
+                        }
+                        //printf("release %d\n",pvoice->adsr_volume);
+                        break;   
+                    default:
+                        // ADSR not started
+                        //printf("none %d\n",pvoice->adsr_volume);
+                        break;                     
+                }
+                pvoice->volume=pvoice->adsr_volume;
+                //printf("adsr: %c %d\n",pvoice->adsr_phase,pvoice->adsr_volume);
+            }
+        }
     }
 }
 
@@ -208,8 +273,8 @@ unsigned char audio_getchannelvalue(uint16_t channel)
 {   
     int16_t value = audio_system.channel[channel].value+128;
     // clamp
-    //if (value<0) value=0;
-    //if (value>255) value=255;
+    if (value<0) value=0;
+    if (value>255) value=255;
     return (unsigned char) value;
 }
 
@@ -224,23 +289,31 @@ void audio_keyon(   uint16_t channel,
     uint32_t samplerstepspersecond= ((uint32_t) frequency)<<16;
     // stepsperupdate=stepspersecond/updatespersecond
     pvoice->delta=samplerstepspersecond/((uint32_t)AUDIO_UPDATE_FREQUENCY);
-    pvoice->volume=velocity;
+    //pvoice->volume=velocity;
     pvoice->position=0;
     pvoice->playing=true;
+    pvoice->adsr_phase='a';
+    pvoice->adsr_volume=0;
 }
 
 // Key a note on a voice off (trigger sound decay)
 void audio_keyoff(   uint16_t channel,
                     uint16_t voice)
 {
-    printf("audio_keyoff unimplemented\n");    
+    AL_Voice *pvoice = &audio_system.channel[channel].voice[voice];
+    if (pvoice->playing)
+    {
+        pvoice->adsr_phase='r';
+    }
 }
 
 // Stop and silence a voice
 void audio_stopvoice(uint16_t channel,
                     uint16_t voice)
 {
-    printf("audio_stopvoice unimplemented\n");
+    // Stopping a voice immediately stops playing a sound
+    // an audible click is likely
+    audio_system.channel[channel].voice[voice].playing=false;
 }
 
 // shutdown audio library and release resources
