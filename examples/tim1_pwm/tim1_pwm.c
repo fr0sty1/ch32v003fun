@@ -133,6 +133,10 @@ int main()
 	audio_initialize();
 
 	extern AL_Instrument audio_instrument_sine;
+	extern AL_Instrument audio_instrument_triangle;
+	extern AL_Instrument audio_instrument_square;
+	extern AL_Instrument audio_instrument_sawtooth;
+
 	audio_setinstrument(0,0,&audio_instrument_sine);
 	audio_setinstrument(0,1,&audio_instrument_sine);
 	audio_setinstrument(0,2,&audio_instrument_sine);
@@ -151,9 +155,14 @@ int main()
 	uint32_t step = (6000000/AUDIO_UPDATE_FREQUENCY)+1;
 	uint32_t next_tick = SysTick->CNT+step;
 	
-	uint32_t secondtimer=AUDIO_UPDATE_FREQUENCY;
+	uint32_t secondtimer=AUDIO_UPDATE_FREQUENCY/2;
 	uint16_t keyfrequency=200;
 
+	AL_Instrument *instruments[]={	&audio_instrument_sine,
+								 	&audio_instrument_triangle,
+									&audio_instrument_square,
+									&audio_instrument_sawtooth };
+	uint16_t instrument=0;
 
 	printf("looping...\n\r");
 	while(1)
@@ -187,7 +196,13 @@ int main()
 				}
 				else
 				{
-					keyfrequency=(keyfrequency>1000)? 200 : keyfrequency+200;
+					keyfrequency+=200;
+					if (keyfrequency>800)
+					{
+						keyfrequency=400;
+						instrument=(instrument+1)&0x03;
+						audio_setinstrument(0,0,instruments[instrument]);
+					}
 					audio_keyon(0,0,keyfrequency,255);	// channel 0 voice 0 freq, velocity
 				}
 			}

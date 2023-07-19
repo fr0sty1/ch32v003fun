@@ -8,19 +8,19 @@
 AL_System audio_system;
 
 // sawtooth sampler
-int8_t audio_waveformsaw(uint16_t index)
+int8_t audio_sawtooth_sampler(uint16_t index)
 {
     return (int8_t) (index>>8);
 }
 
 // square wave sampler
-int8_t audio_waveformsquare(uint16_t index)
+int8_t audio_square_sampler(uint16_t index)
 {
-    return (index& 0x8000)?-127:127;
+    return (int8_t) ((index& 0x8000)?-127:127);
 }
 
 // triangle sampler
-int8_t audio_waveformtriangle(uint16_t index)
+int8_t audio_triangle_sampler(uint16_t index)
 {
     if (index&0x8000)
     {
@@ -53,7 +53,7 @@ int8_t quartersintab[256]={
 };
 
 // sine sampler
-int8_t audio_waveformsine(uint16_t index)
+int8_t audio_sine_sampler(uint16_t index)
 {
     uint16_t tableindex=(index>>6)& 0xff;
     switch (index&0xc000)
@@ -69,7 +69,11 @@ int8_t audio_waveformsine(uint16_t index)
             return -(quartersintab[255-tableindex]);
     }
 }
-AL_Waveform audio_waveform_sine={audio_waveformsine};
+
+AL_Waveform audio_waveform_sine={audio_sine_sampler};
+AL_Waveform audio_waveform_sawtooth={audio_sawtooth_sampler};
+AL_Waveform audio_waveform_square={audio_square_sampler};
+AL_Waveform audio_waveform_triangle={audio_triangle_sampler};
 
 // min 10ms
 #define ADSR_RAMP_MS(ms) (256/((ms)/10))
@@ -80,6 +84,9 @@ AL_ADSR audio_adsr_on={256,0,255,-255,0,0};
 AL_ADSR audio_adsr_piano={ADSR_RAMP_MS(10),ADSR_RAMP_MS(100),255*.66,ADSR_RAMP_MS(900),0,0};  
 
 AL_Instrument audio_instrument_sine={ &audio_waveform_sine,&audio_adsr_piano};
+AL_Instrument audio_instrument_triangle={ &audio_waveform_triangle,&audio_adsr_piano};
+AL_Instrument audio_instrument_square={ &audio_waveform_square,&audio_adsr_piano};
+AL_Instrument audio_instrument_sawtooth={ &audio_waveform_sawtooth,&audio_adsr_piano};
 
 // multiply an 8 bit unsigned volume by an 8 bit signed sample 
 // returning a signed modulated sample
