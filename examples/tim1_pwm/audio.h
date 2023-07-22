@@ -2,9 +2,7 @@
     Audio library
     by D. Scott Williamson 2023
 
-    Audio library is a mu
-
-    System                         All channels
+    System                      All channels
         Channel[]               A polyphonic output channel
             Voice[]             A voice on a channel
                 Instrument      An instrument to be played on a voice
@@ -73,7 +71,6 @@ typedef struct
 {
     AL_Waveform *waveform;
     AL_ADSR     *adsr;
-    //AL_Envelope *envelope;  // todo: envelope description and state need to be separate
     // todo vibrato
     // todo tremelo
 } AL_Instrument;
@@ -96,9 +93,6 @@ typedef struct AL_Voice
     int16_t adsr_volume;    // current volume of the envelope
 
     AL_Instrument *instrument;
-
-//    uint16_t (*update)(struct AL_Voice *this);
-//    void (*setfrequency)(struct AL_Voice *this,uint16_t frequency);
 } AL_Voice;
 
 // AL Channel
@@ -109,7 +103,6 @@ typedef struct
     uint16_t volume;                // channel set volume
     uint16_t compositevolume;       // channel volume * master volume
     int16_t  value;                 // value of all voices in the channel
-
 } AL_Channel;
 
 // AL_System is the entire audio system

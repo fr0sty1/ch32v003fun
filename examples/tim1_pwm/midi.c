@@ -50,35 +50,27 @@ void midi_player_update(void)
             {
                 if (midi_player.first)
                 {
-                    // first iteration, skip to first delay 
+                    // first iteration, skip pending event to first delay 
                     // (could be optimized if tick parsing was in a routine and called from song start)
                     midi_player.first=false;
-                    //printf("first");
                 }
                 else            
                 {
-                        //2   1.7 channel high and note
-                        //    7.1 velocity, 0 is note off and channel low
-                        // f.write('%d,'%(((channel&2)<<6)|(note&0x7f)))
-                        // f.write('%d,'%((channel&1)|((velocity&0x7f)<<1)))
                     // parse event at index
                     uint8_t d0=*midi_player.pevent++;
                     uint8_t d1=*midi_player.pevent++;
                     uint16_t note = d0 & 0x7f;
                     uint16_t velocity = (d1&0xfe);
-                    
                     uint16_t channel = ((d0>>6)&0x02)|(d1&0x01);
                     uint16_t volume = velocity;
                     if (velocity>0)
                     {
                         uint16_t frequency = midi_note_frequencies[note];
                         audio_keyon(0,channel,frequency,volume);
-                        //printf("note on d0 %d d1 %d ch %d n %d f %d v %d\n",d0,d1, channel, note, frequency,velocity);
                     }
                     else
                     {
                         audio_keyoff(0,channel);
-                        //printf("note off ch %d\n",channel);
                     }
                 }
                 
@@ -87,7 +79,6 @@ void midi_player_update(void)
                 {
                     case 0xff:
                         // end of song
-                        //printf("song over" );
                         audio_keyoff(0,0);
                         audio_keyoff(0,1);
                         audio_keyoff(0,2);
@@ -98,13 +89,9 @@ void midi_player_update(void)
                         // extended tick
                         tick=*midi_player.pevent++;
                         tick+=((uint16_t) *midi_player.pevent++)<<8;
-                        //midi_player.tick_timer = *((uint16_t *) midi_player.pevent);
-                        //midi_player.pevent+=2;
-                        //printf("delay long %d\n",midi_player.tick_timer );
                         break;
                     default:
                         midi_player.tick_timer=tick;
-                        //printf("delay short %d\n",midi_player.tick_timer );
                 }
             }
         }
