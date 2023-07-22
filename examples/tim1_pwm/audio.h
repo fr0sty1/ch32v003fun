@@ -12,32 +12,13 @@
                     Envelope    A envelope shaper
                     Tremelo     Tremelo (cyclic volume modulation)
                     Vibrato     Vibrato (cyclic frequency modulation)
-
-    Definition of done
-        [] Play 4 voice tocata and fugue
-            [] Audio system
-            [] Music playback system
-
     todo 
-        [] envelope processing
-        [] Only update volumes when volume updated in update (update flag)
-        [] lookup fast multiply
-            [] look at disassembly of small program 
-            https://github.com/cnlohr/ch32v003fun/blob/master/examples/ws2812bdemo/color_utilities.h
-            FastMultiply
-        [] 4 input pins for 4 voices
-        [] input pins key on/key off for envelope testing
+        [] vibrato
+        [] Tremelo
+        [] Instrument set (piano, organ, violin, drums)
         [] IRQ for audio processing
+        [] update volumes in update one per service
         [] Pivot to single voice for frosty
-
-
-
-        [x] Audio library structures and API can play a sound
-        [x] Audio update calculates everything
-        [x] Play 440 hz sine wave
-        [] special case volumes 255 and 0 (#define)
-        [-] clip waveform (#define)
-        [] Debug #define
 
 */
 
@@ -206,21 +187,5 @@ void audio_stopvoice(uint16_t channel,
          
 // Shutdown audio library and release resources
 void audio_release( void );
-
-
-
-
-typedef struct 
-{
-    uint16_t tickduration;  // midi file tick duration in 44100 kHz ticks
-} MIDI_Header;
-
-typedef struct 
-{
-    uint16_t ticks;     // 4 bit track, 12 bit ticks until next note, 0xffff exits
-    uint8_t note;       // 7 bit midi note
-    uint8_t velocity;   // Velocity, 0 for off
-} MIDI_Event;
-
 
 #endif //#ifndef AUDIO_LIBRARY

@@ -6,6 +6,8 @@
 #include "ch32v003fun.h"
 #include <stdio.h>
 #include "audio.h"
+#include "midi.h"
+
 
 /*
  * initialize TIM1 for PWM
