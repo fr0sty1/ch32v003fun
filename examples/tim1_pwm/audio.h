@@ -37,14 +37,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Audio library structures
 
-// AL_Waveform
-// A waveform returns a value for a 16 bit position 
-// representing a single cycle
-typedef struct 
-{
-    int8_t (*sample)(uint16_t index);
-} AL_Waveform; 
-
 // AL_Envelope
 // A sequence of volume ramps to shape a waveform 
 typedef struct  
@@ -69,8 +61,8 @@ typedef struct
 // The components that describe an instrument
 typedef struct 
 {
-    AL_Waveform *waveform;
-    AL_ADSR     *adsr;
+    int8_t (*sample)(uint16_t index);   // waveform sampler
+    AL_ADSR     *adsr;      // ADSR envelope
     // todo vibrato
     // todo tremelo
 } AL_Instrument;

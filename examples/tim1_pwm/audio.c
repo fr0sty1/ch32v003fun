@@ -1,4 +1,9 @@
 
+/*
+    Audio library
+    by D. Scott Williamson 2023
+*/
+
 #include "ch32v003fun.h"
 #include "audio.h"
 #include <stdio.h>
@@ -94,11 +99,6 @@ int8_t audio_sine_sampler(uint16_t index)
     }
 }
 
-AL_Waveform audio_waveform_sine={audio_sine_sampler};
-AL_Waveform audio_waveform_sawtooth={audio_sawtooth_sampler};
-AL_Waveform audio_waveform_square={audio_square_sampler};
-AL_Waveform audio_waveform_triangle={audio_triangle_sampler};
-
 // min 10ms
 #define ADSR_RAMP_MS(ms) (256/((ms)/10))
 #define ADSR_VOLUME(pct) (255*(pct)/100)
@@ -107,12 +107,17 @@ AL_Waveform audio_waveform_triangle={audio_triangle_sampler};
 AL_ADSR audio_adsr_on={256,0,255,-255,0,0};
 AL_ADSR audio_adsr_piano={ADSR_RAMP_MS(50),ADSR_RAMP_MS(300),255*.66,ADSR_RAMP_MS(900),0,0};  
 
-AL_Instrument audio_instrument_organ={ &audio_waveform_triangle,&audio_adsr_piano};
+AL_Instrument audio_instrument_organ={ audio_triangle_sampler,&audio_adsr_piano};
+AL_Instrument audio_instrument_synth={ audio_sawtooth_sampler,&audio_adsr_piano};
+AL_Instrument audio_instrument_drum ={ audio_noise2_sampler,&audio_adsr_piano};
+AL_Instrument audio_instrument_cymbol={ audio_noise1_sampler,&audio_adsr_piano};
+// violin
+// flute
 
-AL_Instrument audio_instrument_sine={ &audio_waveform_sine,&audio_adsr_piano};
-AL_Instrument audio_instrument_triangle={ &audio_waveform_triangle,&audio_adsr_piano};
-AL_Instrument audio_instrument_square={ &audio_waveform_square,&audio_adsr_piano};
-AL_Instrument audio_instrument_sawtooth={ &audio_waveform_sawtooth,&audio_adsr_piano};
+AL_Instrument audio_instrument_sine={ audio_sine_sampler,&audio_adsr_piano};
+AL_Instrument audio_instrument_triangle={ audio_triangle_sampler,&audio_adsr_piano};
+AL_Instrument audio_instrument_square={ audio_square_sampler,&audio_adsr_piano};
+AL_Instrument audio_instrument_sawtooth={ audio_sawtooth_sampler,&audio_adsr_piano};
 
 // multiply an 8 bit unsigned volume by an 8 bit signed sample 
 // returning a signed modulated sample
@@ -208,7 +213,7 @@ void audio_update( void )
                     // there is an instrument, process
                     //uint16_t compositevolume=audio_volume_sample_multiply(pchannel->compositevolume,pvoice->volume);              
                     pvoice->position+=pvoice->delta;
-                    int16_t sample = (int16_t) pvoice->instrument->waveform->sample(pvoice->position+pvoice->pitchbend);
+                    int16_t sample = (int16_t) pvoice->instrument->sample(pvoice->position+pvoice->pitchbend);
                     //pvoice->value=audio_volume_sample_multiply(compositevolume, sample);
                     pvoice->value=audio_volume_sample_multiply(pvoice->volume, sample);
                     //pvoice->value=((int16_t) pvoice->volume * sample)>>8;
