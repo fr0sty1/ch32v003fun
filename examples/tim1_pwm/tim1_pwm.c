@@ -132,15 +132,14 @@ int main()
 	// Initializ audio system
 	audio_initialize();
 
-	extern AL_Instrument audio_instrument_sine;
-	extern AL_Instrument audio_instrument_triangle;
-	extern AL_Instrument audio_instrument_square;
-	extern AL_Instrument audio_instrument_sawtooth;
+	//extern AL_Instrument audio_instrument_sine;
+	//extern AL_Instrument audio_instrument_triangle;
+	//extern AL_Instrument audio_instrument_square;
+	//extern AL_Instrument audio_instrument_sawtooth;
 
-	audio_setinstrument(0,0,&audio_instrument_sine);
-	audio_setinstrument(0,1,&audio_instrument_sine);
-	audio_setinstrument(0,2,&audio_instrument_sine);
-
+//	audio_setinstrument(0,0,&audio_instrument_sine);
+//	audio_setinstrument(0,1,&audio_instrument_sine);
+//	audio_setinstrument(0,2,&audio_instrument_sine);
 	
 	audio_keyon(0,0,200,255);	// channel 0 voice 0 200Hz full volume
 	/*
@@ -150,23 +149,34 @@ int main()
 	audio_keyon(0,2,300,255/4);	// channel 2 voice 0 300Hz full volume
 	audio_keyon(0,3,350,255/4);	// channel 2 voice 0 300Hz full volume
 	*/
-	// Prepare for 44.1 kHz audio system update 
-	// SysTick->CNT 42.17us = 256 -> 6070666.35049 Hz 
-	uint32_t step = (6000000/AUDIO_UPDATE_FREQUENCY)+1;
-	uint32_t next_tick = SysTick->CNT+step;
-	
-	uint32_t secondtimer=AUDIO_UPDATE_FREQUENCY/2;
-	uint16_t keyfrequency=200;
+
+	/*
+	uint32_t secondtimer=AUDIO_UPDATE_FREQUENCY/32;
+	uint32_t secondmode=0;
+	uint16_t keyfrequency=400;
+	uint16_t instrument=1;
 
 	AL_Instrument *instruments[]={	&audio_instrument_sine,
 								 	&audio_instrument_triangle,
 									&audio_instrument_square,
-									&audio_instrument_sawtooth };
-	uint16_t instrument=0;
+									&audio_instrument_sawtooth, };
+	audio_setinstrument(0,0,&audio_instrument_sine);
+	audio_keyon(0,0,keyfrequency,255);
+	*/
 
-	printf("looping...\n\r");
+	midi_player_init();
+
+	extern uint8_t song[];
+	midi_player_startsong(song);
+
+	// Prepare for 44.1 kHz audio system update 
+	// SysTick->CNT 42.17us = 256 -> 6070666.35049 Hz 
+	uint32_t step = (6000000/AUDIO_UPDATE_FREQUENCY)+1;
+	uint32_t next_tick = SysTick->CNT+step;
+	//printf("looping...\n\r");
 	while(1)
 	{
+		GPIOD->BSHR = (1<<4);	 // Turn on D4
 		// wait for next 44.1 kHz cycle to update audio library
 		if ((next_tick - SysTick->CNT) & 0x80000000 )
 		{
@@ -174,9 +184,15 @@ int main()
 			GPIOD->BSHR = (1<<4);	 // Turn on D4
 			// Advance target count for next 44.1kHz cycle
 			next_tick+=step;
-			
+
 			// update audio driver 
 			audio_update();
+
+			GPIOD->BSHR = (1<<4);	 // Turn on D4
+			GPIOD->BSHR = (1<<(16+4)); // Turn off D4
+
+			midi_player_update();
+
 
 			// set channel 0 pwm value	
 			t1pwm_setpw(0, audio_getchannelvalue(0)); // PWM output on pin D0
@@ -186,17 +202,22 @@ int main()
 			
 			// clear profiling bit
 			GPIOD->BSHR = (1<<(16+4)); // Turn off D4
-
+			/*
 			if (--secondtimer==0)
 			{
-				secondtimer=AUDIO_UPDATE_FREQUENCY;
-				if (audio_system.channel[0].voice[0].playing)
+				secondtimer=AUDIO_UPDATE_FREQUENCY/16;
+				if (secondmode==1)
 				{
-					audio_system.channel[0].voice[0].adsr_phase='r';
+					secondmode=0;
+					if (audio_system.channel[0].voice[0].playing)
+					{
+						audio_system.channel[0].voice[0].adsr_phase='r';
+					}
 				}
 				else
 				{
-					keyfrequency+=200;
+					secondmode=1;
+					keyfrequency+=25;
 					if (keyfrequency>800)
 					{
 						keyfrequency=400;
@@ -206,8 +227,14 @@ int main()
 					audio_keyon(0,0,keyfrequency,255);	// channel 0 voice 0 freq, velocity
 				}
 			}
+			*/
 		}
 
+		extern MIDI_Player midi_player;
+		if (midi_player.pevent==NULL)
+		{
+			midi_player_startsong(song);
+		}
 		// do whatever else your program needs to do here 
 		// but it shouldnt't take more than what's left in the 44.1 Khz cycle
 		// or else audio distortion will result
