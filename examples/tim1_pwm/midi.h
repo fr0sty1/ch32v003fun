@@ -1,25 +1,6 @@
 /*
-    Audio library
+    Mini midi player for the CH32V003 audio library
     by D. Scott Williamson 2023
-
-    Audio library is a mu
-
-    System                         All channels
-        Channel[]               A polyphonic output channel
-            Voice[]             A voice on a channel
-                Instrument      An instrument to be played on a voice
-                    Waveform    A waveform player
-                    Envelope    A envelope shaper
-                    Tremelo     Tremelo (cyclic volume modulation)
-                    Vibrato     Vibrato (cyclic frequency modulation)
-    todo 
-        [] vibrato
-        [] Tremelo
-        [] Instrument set (piano, organ, violin, drums)
-        [] IRQ for audio processing
-        [] update volumes in update one per service
-        [] Pivot to single voice for frosty
-
 */
 
 #ifndef MIDI_LIBRARY

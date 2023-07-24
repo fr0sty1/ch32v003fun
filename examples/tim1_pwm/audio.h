@@ -37,24 +37,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Audio library structures
 
-// AL_Envelope
-// A sequence of volume ramps to shape a waveform 
-typedef struct  
-{
-    // todo key down, sustain, key up
-    uint16_t *deltas;   // list of deltas for volume
-    uint16_t *times;    // list of times for deltas
-} AL_Envelope;
-
 typedef struct
 {
     uint16_t  attack_delta;  // ramp from 0 to max
     uint16_t  decay_delta;   // ramp from max to sustain value
     uint16_t sustain_value;  // sustain value
     uint16_t  release_delta; // ramp from sustain to 0
-
-    uint16_t  vibrato_amplitude; // vibrato amplitude
-    uint16_t  vibrato_delta; // vibrato delta
 }AL_ADSR;
 
 // AL_Instrument
@@ -63,8 +51,10 @@ typedef struct
 {
     int8_t (*sample)(uint16_t index);   // waveform sampler
     AL_ADSR     *adsr;      // ADSR envelope
-    // todo vibrato
-    // todo tremelo
+    uint16_t  vibrato_amplitude; // vibrato amplitude 
+    uint16_t  vibrato_delta; // vibrato delta
+    uint16_t  tremolo_amplitude; // vibrato amplitude 
+    uint16_t  tremolo_delta; // vibrato delta
 } AL_Instrument;
 
 // AL_Voice
@@ -83,6 +73,11 @@ typedef struct AL_Voice
  
     uint8_t adsr_phase;     // current phase
     int16_t adsr_volume;    // current volume of the envelope
+
+    int16_t vibrato;
+    int16_t vibrato_delta;
+    int16_t tremolo;
+    int16_t tremolo_delta;
 
     AL_Instrument *instrument;
 } AL_Voice;

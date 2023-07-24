@@ -62,7 +62,7 @@ int8_t audio_triangle_sampler(uint16_t index)
 } 
 
 // redo quarter sintab to be signed 0 center
-int8_t quartersintab[256]={
+const int8_t quartersintab[256]={
         0,0,1,2,3,3,4,5,6,7,7,8,9,10,10,11,
         12,13,14,14,15,16,17,18,18,19,20,21,21,22,23,24,
         24,25,26,27,28,28,29,30,31,31,32,33,34,34,35,36,
@@ -104,10 +104,10 @@ int8_t audio_sine_sampler(uint16_t index)
 #define ADSR_VOLUME(pct) (255*(pct)/100)
 
 // attack delta, decay delta, sustain value, release delta, vibrato amplitude, vibrato delta
-AL_ADSR audio_adsr_on={256,0,255,-255,0,0};
-AL_ADSR audio_adsr_piano={ADSR_RAMP_MS(50),ADSR_RAMP_MS(300),255*.66,ADSR_RAMP_MS(900),0,0};  
+AL_ADSR audio_adsr_on={256,0,255,-255};
+AL_ADSR audio_adsr_piano={ADSR_RAMP_MS(50),ADSR_RAMP_MS(300),255*.66,ADSR_RAMP_MS(900)};  
 
-AL_Instrument audio_instrument_organ={ audio_triangle_sampler,&audio_adsr_piano};
+AL_Instrument audio_instrument_organ={ audio_triangle_sampler,&audio_adsr_piano,10,1,10,2};
 AL_Instrument audio_instrument_synth={ audio_sawtooth_sampler,&audio_adsr_piano};
 AL_Instrument audio_instrument_drum ={ audio_noise2_sampler,&audio_adsr_piano};
 AL_Instrument audio_instrument_cymbol={ audio_noise1_sampler,&audio_adsr_piano};
@@ -212,7 +212,7 @@ void audio_update( void )
                 {
                     // there is an instrument, process
                     //uint16_t compositevolume=audio_volume_sample_multiply(pchannel->compositevolume,pvoice->volume);              
-                    pvoice->position+=pvoice->delta;
+                    pvoice->position+=pvoice->delta+pvoice->vibrato;
                     int16_t sample = (int16_t) pvoice->instrument->sample(pvoice->position+pvoice->pitchbend);
                     //pvoice->value=audio_volume_sample_multiply(compositevolume, sample);
                     pvoice->value=audio_volume_sample_multiply(pvoice->volume, sample);
@@ -303,7 +303,49 @@ void audio_update( void )
                         //printf("none %d\n",pvoice->adsr_volume);
                         break;                     
                 }
-                pvoice->volume=pvoice->adsr_volume;
+
+                pvoice->vibrato+=pvoice->vibrato_delta;
+                if (pvoice->vibrato>0)
+                {
+                    if (pvoice->vibrato >= pvoice->instrument->vibrato_amplitude)
+                    {
+                        pvoice->vibrato_delta=-pvoice->vibrato_delta;
+                        pvoice->vibrato=(pvoice->instrument->vibrato_amplitude<<1)-pvoice->vibrato;
+                    }
+                }   
+                else if (pvoice->vibrato<0)
+                {
+                    if ((-pvoice->vibrato) >= pvoice->instrument->vibrato_amplitude)
+                    {
+                        pvoice->vibrato_delta=-pvoice->vibrato_delta;
+                        pvoice->vibrato=-(pvoice->instrument->vibrato_amplitude<<1)-pvoice->vibrato;
+                    }
+                }
+               
+                pvoice->tremolo+=pvoice->tremolo_delta;
+                if (pvoice->tremolo>0)
+                {
+                    if (pvoice->tremolo >= pvoice->instrument->tremolo_amplitude)
+                    {
+                        pvoice->tremolo_delta=-pvoice->tremolo_delta;
+                        pvoice->tremolo=(pvoice->instrument->tremolo_amplitude<<1)-pvoice->tremolo;
+                    }
+                }   
+                else if (pvoice->tremolo<0)
+                {
+                    if (-pvoice->tremolo > pvoice->instrument->tremolo_amplitude)
+                    {
+                        pvoice->tremolo_delta=-pvoice->tremolo_delta;
+                        pvoice->tremolo=-(pvoice->instrument->tremolo_amplitude<<1)-pvoice->tremolo;
+                    }
+                }
+
+                
+
+
+
+
+                pvoice->volume=pvoice->adsr_volume+pvoice->tremolo;
                 //printf("adsr: %c %d\n",pvoice->adsr_phase,pvoice->adsr_volume);
             }
         }
@@ -332,11 +374,15 @@ void audio_keyon(   uint16_t channel,
     uint32_t samplerstepspersecond= ((uint32_t) frequency)<<16;
     // stepsperupdate=stepspersecond/updatespersecond
     pvoice->delta=samplerstepspersecond/((uint32_t)AUDIO_UPDATE_FREQUENCY);
-    //pvoice->volume=velocity;
+    pvoice->volume=velocity;
     //pvoice->position=0;
     pvoice->playing=true;
     pvoice->adsr_phase='a';
     pvoice->adsr_volume=0;
+    pvoice->vibrato=0;
+    pvoice->vibrato_delta=pvoice->instrument->vibrato_delta;
+    pvoice->tremolo=0;
+    pvoice->tremolo_delta=pvoice->instrument->tremolo_delta;
 }
 
 // Key a note on a voice off (trigger sound decay)

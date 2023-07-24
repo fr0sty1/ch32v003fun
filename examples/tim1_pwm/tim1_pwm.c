@@ -135,15 +135,16 @@ int main()
 	audio_initialize();
 
 	//extern AL_Instrument audio_instrument_sine;
+	extern AL_Instrument audio_instrument_organ;
 	//extern AL_Instrument audio_instrument_triangle;
 	//extern AL_Instrument audio_instrument_square;
 	//extern AL_Instrument audio_instrument_sawtooth;
 
-//	audio_setinstrument(0,0,&audio_instrument_sine);
+	audio_setinstrument(0,0,&audio_instrument_organ);
 //	audio_setinstrument(0,1,&audio_instrument_sine);
 //	audio_setinstrument(0,2,&audio_instrument_sine);
 	
-	audio_keyon(0,0,200,255);	// channel 0 voice 0 200Hz full volume
+	audio_keyon(0,0,440,255);	// channel 0 voice 0 200Hz full volume
 	/*
 	// A very pleasant major chord
 	audio_keyon(0,0,200,255/4);	// channel 0 voice 0 200Hz full volume
@@ -169,7 +170,7 @@ int main()
 	midi_player_init();
 
 	extern uint8_t song[];
-	midi_player_startsong(song);
+	//midi_player_startsong(song);
 
 	// Prepare for 44.1 kHz audio system update 
 	// SysTick->CNT 42.17us = 256 -> 6070666.35049 Hz 
@@ -232,11 +233,13 @@ int main()
 			*/
 		}
 
+		
 		extern MIDI_Player midi_player;
 		if (midi_player.pevent==NULL)
 		{
 			midi_player_startsong(song);
 		}
+		
 		// do whatever else your program needs to do here 
 		// but it shouldnt't take more than what's left in the 44.1 Khz cycle
 		// or else audio distortion will result
