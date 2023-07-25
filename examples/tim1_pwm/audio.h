@@ -26,6 +26,8 @@
 #define AUDIO_CHANNELS (1)
 #define AUDIO_VOICES_POW2 (2)
 #define AUDIO_VOICES (1<<AUDIO_VOICES_POW2)
+#define AUDIO_FIFO_SIZE_POW2 (6)
+#define AUDIO_FIFO_SIZE (1<<AUDIO_FIFO_SIZE_POW2)
 
 #define AUDIO_UPDATE_FREQUENCY (44100)
 // 44100 Hz /441 = 100 Hz or update every 10MS
@@ -37,13 +39,15 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Audio library structures
 
+// AL_ADSR
+// ADSR envelope
 typedef struct
 {
-    uint16_t  attack_delta;  // ramp from 0 to max
-    uint16_t  decay_delta;   // ramp from max to sustain value
-    uint16_t sustain_value;  // sustain value
-    uint16_t  release_delta; // ramp from sustain to 0
-}AL_ADSR;
+    uint16_t attack_delta;  // ramp from 0 to max
+    uint16_t decay_delta;   // ramp from max to sustain value
+    uint16_t sustain_value; // sustain value
+    uint16_t release_delta; // ramp from sustain to 0
+} AL_ADSR;
 
 // AL_Instrument
 // The components that describe an instrument
@@ -101,6 +105,22 @@ typedef struct
     uint8_t flags;
 #define AL_SYSTEM_FLAG_UPDATE_VOLUME (1<<0)
 } AL_System;
+
+// AL_FIFO
+// Audio Library FIFO
+typedef struct 
+{
+    volatile int8_t audio_fifo[AUDIO_FIFO_SIZE];
+    uint16_t  index_head;
+    uint16_t  index_tail;
+    uint16_t  free;
+} AL_FIFO;
+// Audio Library FIFO functions
+void fifo_init(AL_FIFO* fifo);
+int8_t fifo_read(AL_FIFO* fifo);
+int8_t fifo_write(AL_FIFO* fifo,int8_t data);
+uint16_t fifo_free(AL_FIFO* fifo);
+uint16_t fifo_used(AL_FIFO* fifo);
 
 extern AL_System audio_system;
 

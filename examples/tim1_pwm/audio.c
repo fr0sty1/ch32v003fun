@@ -265,13 +265,15 @@ void audio_update( void )
                 AL_ADSR *padsr=pvoice->instrument->adsr;
                 switch (pvoice->adsr_phase)
                 {
+                    case 'b':
+                        pvoice->playing=true;
+                        pvoice->adsr_phase='a';
                     case 'a':
-
                         pvoice->adsr_volume+=padsr->attack_delta;
-                        if (pvoice->adsr_volume>=254)
+                        if (pvoice->adsr_volume>=255)
                         {
                             pvoice->adsr_phase='d';
-                            pvoice->adsr_volume=254;
+                            pvoice->adsr_volume=255;
                         }
                         //printf("attack %d\n",pvoice->adsr_volume);
                         break;
@@ -339,12 +341,7 @@ void audio_update( void )
                         pvoice->tremolo=-(pvoice->instrument->tremolo_amplitude<<1)-pvoice->tremolo;
                     }
                 }
-
-                
-
-
-
-
+// todo tremolo is pushing volumes over 255
                 pvoice->volume=pvoice->adsr_volume+pvoice->tremolo;
                 //printf("adsr: %c %d\n",pvoice->adsr_phase,pvoice->adsr_volume);
             }
@@ -376,8 +373,8 @@ void audio_keyon(   uint16_t channel,
     pvoice->delta=samplerstepspersecond/((uint32_t)AUDIO_UPDATE_FREQUENCY);
     pvoice->volume=velocity;
     //pvoice->position=0;
-    pvoice->playing=true;
-    pvoice->adsr_phase='a';
+    //pvoice->playing=true; // starts
+    pvoice->adsr_phase='b'; // begin
     pvoice->adsr_volume=0;
     pvoice->vibrato=0;
     pvoice->vibrato_delta=pvoice->instrument->vibrato_delta;
@@ -413,4 +410,70 @@ void audio_release( void )
     // Nothing to do since audio library is statically allocated 
     // and update will no longer be called
 #endif
+}
+
+// Initialize FIFO
+void fifo_init(AL_FIFO* fifo)
+{
+    fifo->index_head=0;
+    fifo->index_tail=0;
+    fifo->free=AUDIO_FIFO_SIZE;
+}
+
+// Read an element from the FIFO
+int8_t fifo_read(AL_FIFO* fifo)
+{
+    if (fifo->free == AUDIO_FIFO_SIZE)
+    {
+        // FIFO empty
+        return 0;
+    }
+    else
+    {
+        // Return current data and advance tail index
+        int8_t data=fifo->audio_fifo[fifo->index_tail++];
+        
+        // Wrap tail in buffer
+        fifo->index_tail&=((1<<AUDIO_FIFO_SIZE_POW2)-1);
+        
+        // Track data read
+        ++fifo->free;
+
+        // Return data
+        return data;
+    }
+}
+
+// Write an element to the FIFO, return true if successful
+int8_t fifo_write(AL_FIFO* fifo,int8_t data)
+{
+    // If the head passes the tail, one FIFO of data will be discarded
+    if (fifo->free==0)
+    {
+        // FIFO full, fail write
+        return false;
+    }
+    else
+    {
+        // Return current data and advance tail index
+        fifo->audio_fifo[fifo->index_head++]=data;
+        // Wrap tail in buffer
+        fifo->index_head&=((1<<AUDIO_FIFO_SIZE_POW2)-1);
+        // Track data written
+        --fifo->free;
+        // Return success
+        return true;
+    }
+}
+
+// Return the amount of data free in the FIFO
+uint16_t fifo_free(AL_FIFO* fifo)
+{
+    return fifo->free;
+}
+
+// Return the amount of used in the FIFO
+uint16_t fifo_used(AL_FIFO* fifo)
+{
+    return AUDIO_FIFO_SIZE-fifo->free;
 }
