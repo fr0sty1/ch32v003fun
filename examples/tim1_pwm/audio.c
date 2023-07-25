@@ -159,6 +159,7 @@ void audio_initialize( void )
 {
     audio_system.volume=255;
     audio_system.envelopedivider=AUDIO_SHAPE_DIVIDER; 
+    fifo_init(&audio_system.fifo);
     for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
     {
         AL_Channel *pchannel=&audio_system.channel[channel];
@@ -175,11 +176,13 @@ void audio_initialize( void )
             pvoice->instrument=NULL;
         }
     }    
+
 #ifdef AUDIO_DEBUG
     printf("Audio initialize\n");
     printf("Audio system has %d channels, each with %d voices\n",AUDIO_CHANNELS,AUDIO_VOICES);
     printf("Audio sample update frequency is %d Hz\n",AUDIO_UPDATE_FREQUENCY);
     printf("Audio shape update frequency is %d Hz\n",AUDIO_UPDATE_FREQUENCY/AUDIO_SHAPE_DIVIDER);
+    printf("Audio fifo size is %d (for all channels)\n",AUDIO_FIFO_SIZE);
     printf("sizeof(audio_system)=%d\n",sizeof(audio_system));
 #endif
 }
@@ -421,7 +424,7 @@ void fifo_init(AL_FIFO* fifo)
 }
 
 // Read an element from the FIFO
-int8_t fifo_read(AL_FIFO* fifo)
+uint8_t fifo_read(AL_FIFO* fifo)
 {
     if (fifo->free == AUDIO_FIFO_SIZE)
     {
@@ -431,7 +434,7 @@ int8_t fifo_read(AL_FIFO* fifo)
     else
     {
         // Return current data and advance tail index
-        int8_t data=fifo->audio_fifo[fifo->index_tail++];
+        uint8_t data=fifo->audio_fifo[fifo->index_tail++];
         
         // Wrap tail in buffer
         fifo->index_tail&=((1<<AUDIO_FIFO_SIZE_POW2)-1);
@@ -445,7 +448,7 @@ int8_t fifo_read(AL_FIFO* fifo)
 }
 
 // Write an element to the FIFO, return true if successful
-int8_t fifo_write(AL_FIFO* fifo,int8_t data)
+uint8_t fifo_write(AL_FIFO* fifo,uint8_t data)
 {
     // If the head passes the tail, one FIFO of data will be discarded
     if (fifo->free==0)

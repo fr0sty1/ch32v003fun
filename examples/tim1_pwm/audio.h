@@ -96,31 +96,29 @@ typedef struct
     int16_t  value;                 // value of all voices in the channel
 } AL_Channel;
 
+// AL_FIFO
+// Audio Library FIFO
+typedef struct 
+{
+    volatile uint8_t audio_fifo[AUDIO_FIFO_SIZE];
+    uint16_t  index_head;
+    uint16_t  index_tail;
+    uint16_t  free;
+} AL_FIFO;
+
+
 // AL_System is the entire audio system
 typedef struct 
 {
     AL_Channel channel[AUDIO_CHANNELS]; // polyphonic sound channels
+    AL_FIFO fifo;                       // fifo    
     uint16_t volume;                    // master volume
     uint16_t envelopedivider;           // for lower frequency shaping processing
     uint8_t flags;
 #define AL_SYSTEM_FLAG_UPDATE_VOLUME (1<<0)
 } AL_System;
 
-// AL_FIFO
-// Audio Library FIFO
-typedef struct 
-{
-    volatile int8_t audio_fifo[AUDIO_FIFO_SIZE];
-    uint16_t  index_head;
-    uint16_t  index_tail;
-    uint16_t  free;
-} AL_FIFO;
-// Audio Library FIFO functions
-void fifo_init(AL_FIFO* fifo);
-int8_t fifo_read(AL_FIFO* fifo);
-int8_t fifo_write(AL_FIFO* fifo,int8_t data);
-uint16_t fifo_free(AL_FIFO* fifo);
-uint16_t fifo_used(AL_FIFO* fifo);
+
 
 extern AL_System audio_system;
 
@@ -187,5 +185,13 @@ void audio_stopvoice(uint16_t channel,
          
 // Shutdown audio library and release resources
 void audio_release( void );
+
+
+// Audio Library FIFO functions
+void fifo_init(AL_FIFO* fifo);
+uint8_t fifo_read(AL_FIFO* fifo);
+uint8_t fifo_write(AL_FIFO* fifo,uint8_t data);
+uint16_t fifo_free(AL_FIFO* fifo);
+uint16_t fifo_used(AL_FIFO* fifo);
 
 #endif //#ifndef AUDIO_LIBRARY

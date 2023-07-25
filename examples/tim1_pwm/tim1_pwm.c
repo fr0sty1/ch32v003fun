@@ -196,9 +196,11 @@ int main()
 
 			midi_player_update();
 
+			// Use fifo
+			fifo_write(&audio_system.fifo,audio_getchannelvalue(0));
 
 			// set channel 0 pwm value	
-			t1pwm_setpw(0, audio_getchannelvalue(0)); // PWM output on pin D0
+			t1pwm_setpw(0, fifo_read(&audio_system.fifo)); // PWM output on pin D0
 			
 			// set channel 1 pwm value
 			//t1pwm_setpw(3, (SysTick->CNT&0x00001000? 255:0));	// Chl 4
