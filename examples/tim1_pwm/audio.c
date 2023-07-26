@@ -107,7 +107,7 @@ int8_t audio_sine_sampler(uint16_t index)
 AL_ADSR audio_adsr_on={256,0,255,-255};
 AL_ADSR audio_adsr_piano={ADSR_RAMP_MS(50),ADSR_RAMP_MS(300),255*.66,ADSR_RAMP_MS(900)};  
 
-AL_Instrument audio_instrument_organ={ audio_triangle_sampler,&audio_adsr_piano,10,1,10,2};
+AL_Instrument audio_instrument_organ={ audio_triangle_sampler,&audio_adsr_piano,0,0,0,0};
 AL_Instrument audio_instrument_synth={ audio_sawtooth_sampler,&audio_adsr_piano};
 AL_Instrument audio_instrument_drum ={ audio_noise2_sampler,&audio_adsr_piano};
 AL_Instrument audio_instrument_cymbol={ audio_noise1_sampler,&audio_adsr_piano};
@@ -190,9 +190,6 @@ void audio_initialize( void )
 // Audio update, call 44100 times a second
 void audio_update( void )
 {
-    GPIOD->BSHR = (1<<4);	 // Turn on D4
-    GPIOD->BSHR = (1<<(16+4)); // Turn off D4   
-
     // update timers of all voice playback parameters
     for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
     {
