@@ -265,9 +265,6 @@ void audio_update( void )
                 AL_ADSR *padsr=pvoice->instrument->adsr;
                 switch (pvoice->adsr_phase)
                 {
-                    case 'b':
-                        pvoice->playing=true;
-                        pvoice->adsr_phase='a';
                     case 'a':
                         pvoice->adsr_volume+=padsr->attack_delta;
                         if (pvoice->adsr_volume>=255)
@@ -301,7 +298,7 @@ void audio_update( void )
                         //printf("release %d\n",pvoice->adsr_volume);
                         break;   
                     default:
-                        // ADSR not started
+                        // ADSR not active
                         //printf("none %d\n",pvoice->adsr_volume);
                         break;                     
                 }
@@ -366,20 +363,17 @@ void audio_keyon(   uint16_t channel,
                     uint16_t velocity )
 {
     AL_Voice *pvoice = &audio_system.channel[channel].voice[voice];
-    pvoice->playing=false;
     // samplerstepspersecond=samplerstepspercycle*cyclespersecond
     uint32_t samplerstepspersecond= ((uint32_t) frequency)<<16;
     // stepsperupdate=stepspersecond/updatespersecond
     pvoice->delta=samplerstepspersecond/((uint32_t)AUDIO_UPDATE_FREQUENCY);
     pvoice->volume=velocity;
-    //pvoice->position=0;
-    //pvoice->playing=true; // starts
-    pvoice->adsr_phase='b'; // begin
-    pvoice->adsr_volume=0;
-    pvoice->vibrato=0;
-    pvoice->vibrato_delta=pvoice->instrument->vibrato_delta;
-    pvoice->tremolo=0;
-    pvoice->tremolo_delta=pvoice->instrument->tremolo_delta;
+    //pvoice->position=0;   // commented out to maintain phase if interrupted playing channel
+    pvoice->playing=true;
+    pvoice->adsr_phase='a'; // begin
+    pvoice->adsr_volume=pvoice->instrument->adsr->attack_delta;
+    pvoice->vibrato=pvoice->vibrato_delta=pvoice->instrument->vibrato_delta;
+    pvoice->tremolo=pvoice->tremolo_delta=pvoice->instrument->tremolo_delta;
 }
 
 // Key a note on a voice off (trigger sound decay)
