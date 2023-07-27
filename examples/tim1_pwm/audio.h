@@ -6,17 +6,22 @@
         Channel[]               A polyphonic output channel
             Voice[]             A voice on a channel
                 Instrument      An instrument to be played on a voice
-                    Waveform    A waveform player
-                    Envelope    A envelope shaper
+                    Sampler     A waveform player
+                    ADSR        A envelope shaper
                     Tremelo     Tremelo (cyclic volume modulation)
                     Vibrato     Vibrato (cyclic frequency modulation)
     todo 
-        [] vibrato
-        [] Tremelo
-        [] Instrument set (piano, organ, violin, drums)
-        [] IRQ for audio processing
-        [] update volumes in update one per service
-        [] Pivot to single voice for frosty
+        [] Init to take list of addresses for update
+        Provide list of addresses to midi init
+        Add ISR proc using channel list
+        Tremelo (clamp)
+        Tremelo use more bits for finer delta
+        ADSR use more bits for finer delta
+        Update volumes in update one per service
+        Instrument set (piano, organ, violin, drums)
+        readme for audio library and mini midi
+                
+        Single voice sample for frosty
 
 */
 

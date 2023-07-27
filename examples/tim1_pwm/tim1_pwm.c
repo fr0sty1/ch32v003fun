@@ -1,13 +1,17 @@
 /*
- * Example for using Advanced Control Timer (TIM1) for PWM generation
- * 03-28-2023 E. Brombaugh
+ * Audio library and mini midi player example
+ * by D. Scott Williamson 7/14/2023
+ * 
+ * Adapted PWM from ch32v003fun
+ * 		Example for using Advanced Control Timer (TIM1) for PWM generation
+ *	 	03-28-2023 E. Brombaugh
  */
 
 #include "ch32v003fun.h"
 #include <stdio.h>
+#include <stdbool.h>
 #include "audio.h"
 #include "midi.h"
-
 
 /*
  * initialize TIM1 for PWM
@@ -74,6 +78,7 @@ void t1pwm_init( void )
 	TIM1->CTLR1 |= TIM_CEN;
 }
 
+// Timer 1 "UP" reload interrupt service routine
 void TIM1_UP_IRQHandler(void) __attribute__((interrupt));
 void TIM1_UP_IRQHandler() {
     if(TIM1->INTFR & TIM_FLAG_Update) {
@@ -104,40 +109,44 @@ int main()
 	audio_initialize();
 
 	// Initialize mini midi player
-	midi_player_init();
+	midi_player_initialize();
 
 	//printf("looping...\n\r");
 	while(1)
 	{
-		//GPIOD->BSHR = (1<<4);	 	 // Turn on  D4
-		//GPIOD->BSHR = (1<<(16+4)); // Turn off D4
-
-		// Keep audio fifo full
+			// Keep audio fifo full
 		while (fifo_free(&audio_system.fifo))
 		{
+			//GPIOD->BSHR = (1<<4);	 	 // Turn on  D4 for debug profiling
+
 			// Update midi player
 			midi_player_update();
+
 			// Update audio system
 			audio_update();
+			
 			// Write current audio sample to the fifo
 			fifo_write(&audio_system.fifo,audio_getchannelvalue(0));
+
+			//GPIOD->BSHR = (1<<(16+4)); // Turn off D4 for debug profiling
 		}
-		
 
 		// Restart song if it ends		
-		extern MIDI_Player midi_player;
-		if (midi_player.pevent==NULL)
+		if (midi_player_playing_song()==false)
 		{
 			// Start the song
 			extern uint8_t song[];
-			midi_player_startsong(song);
+			midi_player_start_song(song);
 		}
 		
 		// Do whatever your program needs to do here, so long as it doesn't
 		// starve the audio fifo or disrupt the timer 1 interrupt 
 	}
 
-	// Shutdown audio system
+	// Shut down mini midi player
+	midi_player_release();
+
+	// Shut down audio system
 	audio_release();
 }
  

@@ -19,7 +19,7 @@ const uint16_t midi_note_frequencies[];
 MIDI_Player midi_player;
 
 // Initialize music player
-void midi_player_init()
+void midi_player_initialize()
 {
      midi_player.samplespertick = 0xffff;
      midi_player.sample_timer=0xffff;
@@ -28,7 +28,7 @@ void midi_player_init()
 }
 
 // Start playing a mini midi song
-void midi_player_startsong(uint8_t *psong)
+void midi_player_start_song(uint8_t *psong)
 {
     // set tempo
     midi_player.samplespertick = AUDIO_UPDATE_FREQUENCY/256;
@@ -44,6 +44,24 @@ void midi_player_startsong(uint8_t *psong)
     midi_player.pevent=psong;
     midi_player.first=true;
     midi_player.tick_timer=1;   // starts next update
+}
+
+// Stop playing a mini midi song
+void midi_player_stop_song(void)
+{
+    audio_keyoff(0,1);
+    audio_keyoff(0,2);
+    audio_keyoff(0,3);
+    audio_keyoff(0,4);
+
+    midi_player.pevent=NULL;
+    midi_player.first=false;
+}
+
+// Return true if mini midi player is playing a song
+uint16_t midi_player_playing_song(void)
+{
+    return midi_player.pevent!=NULL;
 }
 
 // Midi update to be called at 44.1 kHz
@@ -92,7 +110,7 @@ void midi_player_update(void)
                         audio_keyoff(0,1);
                         audio_keyoff(0,2);
                         audio_keyoff(0,3);                    
-                        midi_player_init();
+                        midi_player_initialize();
                         return;
                     case 0xfe:
                         // extended tick
@@ -107,7 +125,13 @@ void midi_player_update(void)
     }
 }
 
-// C1 through G9
+// Release music player
+void midi_player_release(void)
+{
+    midi_player_stop_song();
+}
+
+// MIDI note frequencies C1 through G9
 const uint16_t midi_note_frequencies[]={
     8, 9, 9, 10, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 19, 
     21, 22, 23, 25, 26, 28, 29, 31, 33, 35, 37, 39, 41, 44, 46, 49, 
