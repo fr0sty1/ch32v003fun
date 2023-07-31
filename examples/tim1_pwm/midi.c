@@ -31,7 +31,7 @@ void midi_player_initialize()
 void midi_player_start_song(uint8_t *psong)
 {
     // set tempo
-    midi_player.samplespertick = AUDIO_UPDATE_FREQUENCY/256;
+    midi_player.samplespertick = AUDIO_UPDATE_FREQUENCY/100;
     
     // set up track instruments
     extern AL_Instrument audio_instrument_organ;
