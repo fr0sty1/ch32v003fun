@@ -154,16 +154,18 @@ uint16_t audio_volume_volume_multiply(uint16_t v1,uint16_t v2)
 
 	return ret>>8;
 }
+
 // initialize audio library
 void audio_initialize( void )
 {
     audio_system.volume=255;
     audio_system.envelopedivider=AUDIO_SHAPE_DIVIDER; 
-    fifo_init(&audio_system.fifo);
+    fifo_initialize(&audio_system.fifo);
     for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
     {
         AL_Channel *pchannel=&audio_system.channel[channel];
         pchannel->volume=255;
+        pchannel->compositevolume=(255*255>>8);
 
         for (uint16_t voice=0;voice<AUDIO_VOICES; ++voice)
         {
@@ -172,6 +174,7 @@ void audio_initialize( void )
             pvoice->delta=0;            
             pvoice->pitchbend=0;            
             pvoice->volume=255;
+            pvoice->compositevolume=(255*255*255>>16);
             pvoice->value=0;
             pvoice->instrument=NULL;
         }
@@ -187,21 +190,45 @@ void audio_initialize( void )
 #endif
 }
 
-// Audio update, call 44100 times a second
+// Audio update
 void audio_update( void )
 {
+    // Process volumes if any have changed
+    if ( audio_system.flags & AL_SYSTEM_FLAG_UPDATE_COMPOSITE_VOLUME)
+    {
+        for (uint16_t channel=0 ; channel < AUDIO_CHANNELS ; ++channel)
+        {
+            AL_Channel *pchannel=&audio_system.channel[channel];
+
+            // Update composite channel volumes
+            if ( (audio_system.flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) | 
+                (pchannel->flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) )
+            {         
+                pchannel->compositevolume = audio_volume_volume_multiply(audio_system.volume,pchannel->volume);
+                pchannel->flags |= AL_SYSTEM_FLAG_UPDATE_VOLUME;
+            }
+
+            // Update composite voice volumes
+            for (uint16_t voice=0;voice<AUDIO_VOICES; ++voice)
+            {
+                AL_Voice *pvoice=&pchannel->voice[voice];
+
+                if ( (pchannel->flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) |
+                    (pvoice->flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) )
+                {
+                    pvoice->compositevolume = audio_volume_volume_multiply(pchannel->compositevolume,pvoice->volume);              
+                    pvoice->flags &= ~AL_SYSTEM_FLAG_UPDATE_VOLUME;
+                }
+            }
+            pchannel->flags&= ~AL_SYSTEM_FLAG_UPDATE_VOLUME;
+        }
+        audio_system.flags &= ~AL_SYSTEM_FLAG_UPDATE_VOLUME;
+    }
+
     // update timers of all voice playback parameters
     for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
     {
         AL_Channel *pchannel=&audio_system.channel[channel];
-        // calculate combined master and channel volume
-        if ( audio_system.flags&AL_SYSTEM_FLAG_UPDATE_VOLUME)
-        {         
-            //pchannel->compositevolume=audio_volume_volume_multiply(audio_system.volume,pchannel->volume);
-            audio_system.flags&=~AL_SYSTEM_FLAG_UPDATE_VOLUME;
-            //printf("setting volumes\n");
-        }
-
         pchannel->value=0;
         for (uint16_t voice=0;voice<AUDIO_VOICES; ++voice)
         {
@@ -211,10 +238,9 @@ void audio_update( void )
                 if (pvoice->instrument!=NULL)
                 {
                     // there is an instrument, process
-                    //uint16_t compositevolume=audio_volume_sample_multiply(pchannel->compositevolume,pvoice->volume);              
                     pvoice->position+=pvoice->delta+pvoice->vibrato;
                     int16_t sample = (int16_t) pvoice->instrument->sample(pvoice->position+pvoice->pitchbend);
-                    //pvoice->value=audio_volume_sample_multiply(compositevolume, sample);
+                    //pvoice->value=audio_volume_sample_multiply(pvoice->compositevolume, sample);
                     pvoice->value=audio_volume_sample_multiply(pvoice->volume, sample);
                     //pvoice->value=((int16_t) pvoice->volume * sample)>>8;
                     //printf("%d %d\n",voice,pvoice->volume);
@@ -347,13 +373,59 @@ void audio_update( void )
 }
 
 // Get the value of an output pin
-unsigned char audio_getchannelvalue(uint16_t channel)
+unsigned char audio_get_channel_value(uint16_t channel)
 {   
     int16_t value = audio_system.channel[channel].value+128;
     // clamp
     if (value<0) value=0;
     if (value>255) value=255;
     return (unsigned char) value;
+}
+
+// Set audio system master volume
+inline void audio_set_master_volume(uint16_t volume ) 
+{
+    // Volume changes are expensive and only should be done when needed (no hardware multiply)
+    if (audio_system.volume != volume)
+    {
+        // Set the master volume
+        audio_system.volume=volume;
+        // Flag that composite volumes need to be updated next update and that the master volume has changed
+        audio_system.flags |= AL_SYSTEM_FLAG_UPDATE_VOLUME | AL_SYSTEM_FLAG_UPDATE_COMPOSITE_VOLUME;
+    }
+}
+
+// Set audio system channel volume
+inline void audio_set_channel_volume(uint16_t channel,
+                                     uint16_t volume )
+{
+    // Volume changes are expensive and only should be done when needed (no hardware multiply)
+    if (audio_system.channel[channel].volume != volume)
+    {
+        // Set the channel volume
+        audio_system.channel[channel].volume=volume;
+        // Flag that the channel composite volume needs update
+        audio_system.channel[channel].flags |= AL_SYSTEM_FLAG_UPDATE_VOLUME;
+        // Flag that a volume has changed and composite volumes need to be updated next update
+        audio_system.flags |= AL_SYSTEM_FLAG_UPDATE_COMPOSITE_VOLUME;
+    }
+}
+
+// Set audio system voice volume
+inline void audio_set_voice_volume( uint16_t channel,
+                                    uint16_t voice,
+                                    uint16_t volume )
+{
+    // Volume changes are expensive and only should be done when needed (no hardware multiply)
+    if (audio_system.channel[channel].voice[voice].volume != volume)
+    {
+        // Set the voice volume
+        audio_system.channel[channel].voice[voice].volume = volume;
+        // Flag that the voice composite volume needs update
+        audio_system.channel[channel].voice[voice].flags |= AL_SYSTEM_FLAG_UPDATE_VOLUME;
+        // Flag that a volume has changed and composite volumes need to be updated next update
+        audio_system.flags |= AL_SYSTEM_FLAG_UPDATE_COMPOSITE_VOLUME;
+    }
 }
 
 // Key a note on a voice on
@@ -367,12 +439,16 @@ void audio_keyon(   uint16_t channel,
     uint32_t samplerstepspersecond= ((uint32_t) frequency)<<16;
     // stepsperupdate=stepspersecond/updatespersecond
     pvoice->delta=samplerstepspersecond/((uint32_t)AUDIO_UPDATE_FREQUENCY);
-    pvoice->volume=velocity;
+    pvoice->pitchbend=0;
+    audio_set_voice_volume(channel,voice,velocity);
     //pvoice->position=0;   // commented out to maintain phase if interrupted playing channel
     pvoice->playing=true;
-    pvoice->adsr_phase='a'; // begin
+    // Start ADSR
+    pvoice->adsr_phase='a';
     pvoice->adsr_volume=pvoice->instrument->adsr->attack_delta;
+    // Start vibrato
     pvoice->vibrato=pvoice->vibrato_delta=pvoice->instrument->vibrato_delta;
+    // Start tremolo
     pvoice->tremolo=pvoice->tremolo_delta=pvoice->instrument->tremolo_delta;
 }
 
@@ -385,6 +461,8 @@ void audio_keyoff(   uint16_t channel,
     {
         pvoice->adsr_phase='r';
     }
+    //GPIOD->BSHR = (1<<4);	 	 // Turn on  D4 for debug profiling
+    //GPIOD->BSHR = (1<<(16+4)); // Turn off D4 for debug profiling
 }
 
 // Stop and silence a voice
@@ -407,7 +485,7 @@ void audio_release( void )
 }
 
 // Initialize FIFO
-void fifo_init(AL_FIFO* fifo)
+void fifo_initialize(AL_FIFO* fifo)
 {
     fifo->index_head=0;
     fifo->index_tail=0;

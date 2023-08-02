@@ -126,7 +126,7 @@ int main()
 			audio_update();
 			
 			// Write current audio sample to the fifo
-			fifo_write(&audio_system.fifo,audio_getchannelvalue(0));
+			fifo_write(&audio_system.fifo,audio_get_channel_value(0));
 
 			//GPIOD->BSHR = (1<<(16+4)); // Turn off D4 for debug profiling
 		}

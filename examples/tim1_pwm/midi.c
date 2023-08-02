@@ -35,10 +35,10 @@ void midi_player_start_song(uint8_t *psong)
     
     // set up track instruments
     extern AL_Instrument audio_instrument_organ;
-    audio_setinstrument(0,0,&audio_instrument_organ);
-    audio_setinstrument(0,1,&audio_instrument_organ);
-	audio_setinstrument(0,2,&audio_instrument_organ);
-	audio_setinstrument(0,3,&audio_instrument_organ);
+    audio_set_instrument(0,0,&audio_instrument_organ);
+    audio_set_instrument(0,1,&audio_instrument_organ);
+	audio_set_instrument(0,2,&audio_instrument_organ);
+	audio_set_instrument(0,3,&audio_instrument_organ);
 
     // start song
     midi_player.pevent=psong;

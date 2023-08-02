@@ -20,6 +20,8 @@
         Update volumes in update one per service
         Instrument set (piano, organ, violin, drums)
         readme for audio library and mini midi
+        Verify voice pitch bend works
+        consistent use of p in pointers
                 
         Single voice sample for frosty
 
@@ -75,6 +77,7 @@ typedef struct AL_Voice
     uint16_t pitchbend; // pitch bend (delta on delta)
 
     uint16_t volume;    // 8 bit volume 
+    uint16_t compositevolume;  // voice volume * channel volume * master volume
     int16_t value;      // value
 
     uint8_t playing;      // todo all voices play all the time now
@@ -89,6 +92,7 @@ typedef struct AL_Voice
     int16_t tremolo_delta;
 
     AL_Instrument *instrument;
+    uint8_t flags;
 } AL_Voice;
 
 // AL Channel
@@ -99,6 +103,7 @@ typedef struct
     uint16_t volume;                // channel set volume
     uint16_t compositevolume;       // channel volume * master volume
     int16_t  value;                 // value of all voices in the channel
+    uint8_t flags;
 } AL_Channel;
 
 // AL_FIFO
@@ -116,11 +121,12 @@ typedef struct
 typedef struct 
 {
     AL_Channel channel[AUDIO_CHANNELS]; // polyphonic sound channels
-    AL_FIFO fifo;                       // fifo    
     uint16_t volume;                    // master volume
     uint16_t envelopedivider;           // for lower frequency shaping processing
     uint8_t flags;
+    AL_FIFO fifo;                       // fifo    
 #define AL_SYSTEM_FLAG_UPDATE_VOLUME (1<<0)
+#define AL_SYSTEM_FLAG_UPDATE_COMPOSITE_VOLUME (1<<1)
 } AL_System;
 
 
@@ -137,42 +143,37 @@ void audio_initialize( void );
 void audio_update( void );
 
 // Return channel value to be sent to PWM
-unsigned char audio_getchannelvalue(uint16_t channel);
+unsigned char audio_get_channel_value(uint16_t channel);
 
 // Set audio system master volume
-inline void audio_setmastervolume(uint16_t volume ) 
-{
-    audio_system.volume=volume;
-    audio_system.flags|=AL_SYSTEM_FLAG_UPDATE_VOLUME;
-}
+void audio_set_master_volume(uint16_t volume );
+
 
 // Set audio system channel volume
-inline void audio_setchannelvolume(uint16_t channel,
-                            uint16_t volume )
-{
-    audio_system.channel[channel].volume=volume;
-    audio_system.flags|=AL_SYSTEM_FLAG_UPDATE_VOLUME;
-}
+void audio_set_channel_volume(uint16_t channel,
+                            uint16_t volume );
+
 
 // Set audio system voice volume
-inline void audio_setvoicevolume(uint16_t channel,
+void audio_set_voice_volume(uint16_t channel,
                           uint16_t voice,
-                          uint16_t volume )
-{
-    audio_system.channel[channel].voice[voice].volume=volume;
-}
+                          uint16_t volume );
 
 // Set audio system voice volume
-inline void audio_setvoicepitchbend(uint16_t channel,
+inline void audio_set_voice_pitchbend(uint16_t channel,
                           uint16_t voice,
                           uint16_t pitchbend )
-    {audio_system.channel[channel].voice[voice].pitchbend=pitchbend;}
+{
+    audio_system.channel[channel].voice[voice].pitchbend=pitchbend;
+}
 
 // Set a voice's instrument parameters
-inline void audio_setinstrument(   uint16_t channel,
+inline void audio_set_instrument(   uint16_t channel,
                             uint16_t voice,
                             AL_Instrument *instrument)
-    {audio_system.channel[channel].voice[voice].instrument=instrument;}
+{
+    audio_system.channel[channel].voice[voice].instrument=instrument;
+}
 
 // Key a note on a voice on
 void audio_keyon(   uint16_t channel,
@@ -191,12 +192,21 @@ void audio_stopvoice(uint16_t channel,
 // Shutdown audio library and release resources
 void audio_release( void );
 
-
 // Audio Library FIFO functions
-void fifo_init(AL_FIFO* fifo);
+
+// Initialize FIFO
+void fifo_initialize(AL_FIFO* fifo);
+
+// Read an element from the FIFO
 uint8_t fifo_read(AL_FIFO* fifo);
+
+// Write an element to the FIFO, return true if successful
 uint8_t fifo_write(AL_FIFO* fifo,uint8_t data);
+
+// Return the amount of data free in the FIFO
 uint16_t fifo_free(AL_FIFO* fifo);
+
+// Return the amount of used in the FIFO
 uint16_t fifo_used(AL_FIFO* fifo);
 
 #endif //#ifndef AUDIO_LIBRARY
