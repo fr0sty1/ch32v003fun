@@ -39,6 +39,7 @@ void midi_player_start_song(uint8_t *psong)
     //extern AL_Instrument audio_instrument_drum;
     //extern AL_Instrument audio_instrument_cymbol;
     //extern AL_Instrument audio_instrument_violin;
+    //extern AL_Instrument audio_instrument_8bit;
 
     audio_set_instrument(0,0,&audio_instrument_synth);
     audio_set_instrument(0,1,&audio_instrument_synth);

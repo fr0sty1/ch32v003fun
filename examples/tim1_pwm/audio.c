@@ -112,6 +112,7 @@ AL_Instrument audio_instrument_synth={ audio_sawtooth_sampler,&audio_adsr_piano,
 AL_Instrument audio_instrument_drum ={ audio_noise2_sampler,&audio_adsr_piano,0,0,0,0};
 AL_Instrument audio_instrument_cymbol={ audio_noise1_sampler,&audio_adsr_piano,0,0,0,0};
 AL_Instrument audio_instrument_violin={ audio_sine_sampler,&audio_adsr_piano,4,1,2,1};
+AL_Instrument audio_instrument_8bit={ audio_square_sampler,&audio_adsr_piano,0,0,0,0};
 // flute
 
 AL_Instrument audio_instrument_sine={ audio_sine_sampler,&audio_adsr_piano};
