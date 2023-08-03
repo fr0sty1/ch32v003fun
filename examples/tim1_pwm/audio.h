@@ -51,6 +51,7 @@
 typedef struct
 {
     uint16_t attack_delta;  // ramp from 0 to max
+    uint16_t attack_peak;   // attack peak value
     uint16_t decay_delta;   // ramp from max to sustain value
     uint16_t sustain_value; // sustain value
     uint16_t release_delta; // ramp from sustain to 0
@@ -61,7 +62,7 @@ typedef struct
 typedef struct 
 {
     int8_t (*sample)(uint16_t index);   // waveform sampler
-    AL_ADSR     *adsr;      // ADSR envelope
+    AL_ADSR   *adsr;      // ADSR envelope
     uint16_t  vibrato_amplitude; // vibrato amplitude 
     uint16_t  vibrato_delta; // vibrato delta
     uint16_t  tremolo_amplitude; // vibrato amplitude 
@@ -72,24 +73,30 @@ typedef struct
 // A voice plays a single instrument
 typedef struct AL_Voice
 {
+    // todo, reorder members
+
     uint16_t position;  // position in wave table fixed point 0 to 1
     uint16_t delta;     // derived from frequency and length of wave table
     uint16_t pitchbend; // pitch bend (delta on delta)
 
     uint16_t volume;    // 8 bit volume 
     uint16_t compositevolume;  // voice volume * channel volume * master volume
-    int16_t value;      // value
+    uint16_t sample_volume; // the volume applied to samples
+    int16_t output_value;      // value
 
     uint8_t playing;      // todo all voices play all the time now
 //    uint8_t priority;   // to be used for dynamic voice allocation
  
     uint8_t adsr_phase;     // current phase
     int16_t adsr_volume;    // current volume of the envelope
+    AL_ADSR adsr_composite;    // ADSR settings scaled by composite volume 
 
     int16_t vibrato;
     int16_t vibrato_delta;
+
     int16_t tremolo;
     int16_t tremolo_delta;
+    int16_t tremolo_amplitude;
 
     AL_Instrument *instrument;
     uint8_t flags;
@@ -102,7 +109,7 @@ typedef struct
     AL_Voice voice[AUDIO_VOICES];   // voices in the channel
     uint16_t volume;                // channel set volume
     uint16_t compositevolume;       // channel volume * master volume
-    int16_t  value;                 // value of all voices in the channel
+    int16_t  output_value;                 // value of all voices in the channel
     uint8_t flags;
 } AL_Channel;
 
