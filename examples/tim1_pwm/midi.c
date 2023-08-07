@@ -11,7 +11,11 @@
 
 // Song to play
 //#include "Brandenburg-Concerto-Nr-5-Bwv-1047.mid.c"
-#include "Toccata-and-Fugue-Dm_midi.c"
+//#include "Toccata-and-Fugue-Dm_midi.c"
+//#include "Fur-Elise.mid.c"
+#include "korobeiniki.mid.c"    
+//#include "In-the-hall-of-the-Mountain-King.mid.c"    
+//#include "Hall_and_Oates_-_I_Cant_Go_for_That.mid.c"
 
 const uint16_t midi_note_frequencies[];
 
@@ -35,16 +39,21 @@ void midi_player_start_song(uint8_t *psong)
     
     // set up track instruments
     //extern AL_Instrument audio_instrument_organ;
-    extern AL_Instrument audio_instrument_synth;
+    //extern AL_Instrument audio_instrument_synth;
     //extern AL_Instrument audio_instrument_drum;
     //extern AL_Instrument audio_instrument_cymbol;
     //extern AL_Instrument audio_instrument_violin;
-    //extern AL_Instrument audio_instrument_8bit;
+    extern AL_Instrument audio_instrument_8bit;
+    //extern AL_Instrument audio_instrument_piano;
+    //extern AL_Instrument audio_instrument_bubble;
+    //extern AL_Instrument audio_instrument_tom;
 
-    audio_set_instrument(0,0,&audio_instrument_synth);
-    audio_set_instrument(0,1,&audio_instrument_synth);
-	audio_set_instrument(0,2,&audio_instrument_synth);
-	audio_set_instrument(0,3,&audio_instrument_synth);
+    AL_Instrument *pinstrument= &audio_instrument_8bit;
+    
+    audio_set_instrument(0,0,pinstrument);
+    audio_set_instrument(0,1,pinstrument);
+	audio_set_instrument(0,2,pinstrument);
+	audio_set_instrument(0,3,pinstrument);
 
     // start song
     midi_player.pevent=psong;

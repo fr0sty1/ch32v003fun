@@ -64,9 +64,9 @@ typedef struct
     int8_t (*sample)(uint16_t index);   // waveform sampler
     AL_ADSR   *adsr;      // ADSR envelope
     uint16_t  vibrato_amplitude; // vibrato amplitude 
-    uint16_t  vibrato_delta; // vibrato delta
+    int16_t  vibrato_delta; // vibrato delta
     uint16_t  tremolo_amplitude; // vibrato amplitude 
-    uint16_t  tremolo_delta; // vibrato delta
+    int16_t  tremolo_delta; // vibrato delta
 } AL_Instrument;
 
 // AL_Voice

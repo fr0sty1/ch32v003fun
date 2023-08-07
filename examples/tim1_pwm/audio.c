@@ -103,17 +103,48 @@ int8_t audio_sine_sampler(uint16_t index)
 #define ADSR_RAMP_MS(ms) (256/((ms)/10))
 #define ADSR_VOLUME(pct) (255*(pct)/100)
 
-// attack delta, decay delta, sustain value, release delta, vibrato amplitude, vibrato delta
-AL_ADSR audio_adsr_on={256,255,0,255,-255};
-AL_ADSR audio_adsr_piano={ADSR_RAMP_MS(50),255,ADSR_RAMP_MS(300),255*.66,ADSR_RAMP_MS(900)};  
+// ADSR parameters: attack delta, attack peak, decay delta, sustain value, release delta
+AL_ADSR audio_adsr_on =     {256, 255, 0, 255, -255};
+AL_ADSR audio_adsr_piano =  {255, 255, ADSR_RAMP_MS(050),255*.60,ADSR_RAMP_MS(900)};  
+AL_ADSR audio_adsr_8bit =   {ADSR_RAMP_MS(50), 255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(900)};  
+AL_ADSR audio_adsr_violin = {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
+AL_ADSR audio_adsr_flute =  {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
+AL_ADSR audio_adsr_sax =    {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
+AL_ADSR audio_adsr_tom =    {128, 255, ADSR_RAMP_MS(250) ,  0, 0};  
+AL_ADSR audio_adsr_snare =  {128, 255, ADSR_RAMP_MS(3000),  0, 0};  
+AL_ADSR audio_adsr_cymbol = {128, 255, ADSR_RAMP_MS(650) ,  0, 0};  
+AL_ADSR audio_adsr_hihat =  {128, 255, ADSR_RAMP_MS(1000), 64, ADSR_RAMP_MS(150)};  
 
-AL_Instrument audio_instrument_organ={ audio_triangle_sampler,&audio_adsr_piano,0,0,0,0};
-AL_Instrument audio_instrument_synth={ audio_sawtooth_sampler,&audio_adsr_piano,0,0,0,0};
-AL_Instrument audio_instrument_drum ={ audio_noise2_sampler,&audio_adsr_piano,0,0,0,0};
-AL_Instrument audio_instrument_cymbol={ audio_noise1_sampler,&audio_adsr_piano,0,0,0,0};
-AL_Instrument audio_instrument_violin={ audio_sine_sampler,&audio_adsr_piano,4,1,2,1};
-AL_Instrument audio_instrument_8bit={ audio_square_sampler,&audio_adsr_piano,0,0,0,0};
-// flute
+// Instrument: sampler, ADSR, vibrato amplitude, vibrato delta, tremolo amplitude, tremolo delta
+AL_Instrument audio_instrument_piano =  { audio_sine_sampler,       &audio_adsr_piano,      0,0,    0,0};
+AL_Instrument audio_instrument_organ =  { audio_triangle_sampler,   &audio_adsr_piano,      0,0,    0,0};
+AL_Instrument audio_instrument_synth =  { audio_sawtooth_sampler,   &audio_adsr_piano,      0,0,    0,0};
+AL_Instrument audio_instrument_8bit =   { audio_square_sampler,     &audio_adsr_8bit,       0,0,    0,0};
+AL_Instrument audio_instrument_vibraphone={ audio_sine_sampler,     &audio_adsr_piano,      4,1,    2,1};
+
+AL_Instrument audio_instrument_violin = { audio_sawtooth_sampler,   &audio_adsr_violin,     4,1,    2,1};
+
+AL_Instrument audio_instrument_drum =   { audio_noise2_sampler,     &audio_adsr_piano,      0,0,    0,0};
+AL_Instrument audio_instrument_hihat =  { audio_noise2_sampler,     &audio_adsr_hihat,      5,-1,   0,0};
+AL_Instrument audio_instrument_snare =  { audio_noise2_sampler,     &audio_adsr_tom,        1000,-1,0,0};
+AL_Instrument audio_instrument_cymbol = { audio_noise2_sampler,     &audio_adsr_cymbol,     50,-5,  0,0};
+AL_Instrument audio_instrument_tom =    { audio_sine_sampler,       &audio_adsr_tom,        100,-1, 0,0};
+
+AL_Instrument audio_instrument_flute =  { audio_triangle_sampler,   &audio_adsr_flute,      4,1,    2,1};
+AL_Instrument audio_instrument_sax =    { audio_triangle_sampler,   &audio_adsr_sax,        4,1,    2,1};
+
+// harpsicord
+
+AL_Instrument audio_instrument_bubble ={ audio_sine_sampler,&audio_adsr_tom,-1,10,0,0};
+
+
+/*
+cymbol pitch=5019, 10003 10013, 16387 
+5039 bass drum
+snare  12036
+snare  12080 (or 81)
+*/
+
 
 AL_Instrument audio_instrument_sine={ audio_sine_sampler,&audio_adsr_piano};
 AL_Instrument audio_instrument_triangle={ audio_triangle_sampler,&audio_adsr_piano};
@@ -250,7 +281,8 @@ void audio_update( void )
                     pvoice->position += pvoice->delta + pvoice->vibrato;
                     int16_t sample = (int16_t) pvoice->instrument->sample(pvoice->position + pvoice->pitchbend);
                     pvoice->output_value=audio_volume_sample_multiply(pvoice->sample_volume, sample);
-                    //printf("%d %d\n",voice,pvoice->volume);
+                    //pvoice->output_value=128-pvoice->adsr_volume;
+                    //printf("%d %d\n",voice,pvoice->sample_volume);
                 }
                 else
                 {
@@ -300,16 +332,16 @@ void audio_update( void )
                 {
                     case 'a':
                         pvoice->adsr_volume += padsr->attack_delta;
-                        if (pvoice->adsr_volume >= pvoice->adsr_composite.attack_peak)
+                        if (pvoice->adsr_volume >= padsr->attack_peak)
                         {
                             pvoice->adsr_phase = 'd';
-                            pvoice->adsr_volume = pvoice->adsr_composite.attack_peak;
+                            pvoice->adsr_volume = padsr->attack_peak;
                         }
                         //printf("attack %d\n",pvoice->adsr_volume);
                         break;
                     case 'd':
                         pvoice->adsr_volume -= padsr->decay_delta;
-                        if ((pvoice->adsr_volume <= padsr->sustain_value) || (pvoice->adsr_volume & 0x8000))
+                        if ((pvoice->adsr_volume <= padsr->sustain_value) || (pvoice->adsr_volume <0))
                         {
                             pvoice->adsr_phase='s';
                             pvoice->adsr_volume=padsr->sustain_value;
@@ -322,7 +354,7 @@ void audio_update( void )
                         break;
                     case 'r':
                         pvoice->adsr_volume -= padsr->release_delta;
-                        if (pvoice->adsr_volume & 0x8000)
+                        if (pvoice->adsr_volume < 0)
                         {
                             pvoice->adsr_phase='x';
                             pvoice->adsr_volume=0;
