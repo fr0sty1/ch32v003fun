@@ -10,29 +10,106 @@
 #include <stdbool.h>
 
 // Song to play
-//#include "Toccata-and-Fugue-Dm_midi.c"
-//extern AL_Instrument audio_instrument_synth;
-//AL_Instrument *pinstrument= &audio_instrument_synth;
+#define MIDI_SONG 2
 
-//#include "Fur-Elise.mid.c"
-//extern AL_Instrument audio_instrument_piano;
-//AL_Instrument *pinstrument= &audio_instrument_piano;
+#if MIDI_SONG==1
+#   if AUDIO_VOICES==4
+#   include "Toccata-and-Fugue-Dm.mid4.c"
+#   elif AUDIO_VOICES==8
+#   include "Toccata-and-Fugue-Dm.mid8.c"
+#   endif
+extern AL_Instrument audio_instrument_synth;
+AL_Instrument *pinstrument= &audio_instrument_synth;
 
-//#include "korobeiniki.mid.c"
-//extern AL_Instrument audio_instrument_8bit;
-//AL_Instrument *pinstrument= &audio_instrument_8bit;
+#elif MIDI_SONG==2
+#   if AUDIO_VOICES==4
+#   include "Fur_Elise.mid4.c"
+#   elif AUDIO_VOICES==8
+#   include "Fur_Elise.mid8.c"
+#   endif
+extern AL_Instrument audio_instrument_piano;
+AL_Instrument *pinstrument= &audio_instrument_piano;
 
-//#include "In-the-hall-of-the-Mountain-King.mid.c"
+#elif MIDI_SONG==3
+#   if AUDIO_VOICES==4
+#   include "brand3.mid4.c"
+#   elif AUDIO_VOICES==8
+#   include "brand3.mid8.c"
+#   endif
+extern AL_Instrument audio_instrument_synth;
+AL_Instrument *pinstrument= &audio_instrument_synth;
+
+#elif MIDI_SONG==4
+#   if AUDIO_VOICES==4
+#   include "korobeiniki.mid4.c"
+#   elif AUDIO_VOICES==8
+#   include "korobeiniki.mid8.c"
+#   endif
+extern AL_Instrument audio_instrument_8bit;
+AL_Instrument *pinstrument= &audio_instrument_8bit;
+
+#elif MIDI_SONG==5
+#   if AUDIO_VOICES==4
+#   include "In_the_hall_of_the_Mountain_King.mid4.c"
+#   elif AUDIO_VOICES==8
+#   include "In_the_hall_of_the_Mountain_King.mid8.c"
+#   endif
+extern AL_Instrument audio_instrument_synth;
+AL_Instrument *pinstrument= &audio_instrument_synth;
+
 //extern AL_Instrument audio_instrument_fat_organ;
 //AL_Instrument *pinstrument= &audio_instrument_fat_organ;
 
-#include "Mario_Bros._-_Super_Mario_Bros._Theme.mid.c"
+#elif MIDI_SONG==6
+#   if AUDIO_VOICES==4
+#   include "Super_Mario_Bros_Theme.mid4.c"
+#   elif AUDIO_VOICES==8
+#   include "Super_Mario_Bros_Theme.mid8.c"
+#   endif
 extern AL_Instrument audio_instrument_violin;
 AL_Instrument *pinstrument= &audio_instrument_violin;
 
+#elif MIDI_SONG==7
+#   if AUDIO_VOICES==4
+#   include "sweetchildofmine.mid4.c"
+#   elif AUDIO_VOICES==8
+#   include "sweetchildofmine.mid8.c"
+#   endif
+extern AL_Instrument audio_instrument_violin;
+AL_Instrument *pinstrument= &audio_instrument_violin;
+
+#elif MIDI_SONG==8
+#   if AUDIO_VOICES==4
+#   include "Brandenburg-Concerto-Nr-5-Bwv-1047.mid4.c"
+#   elif AUDIO_VOICES==8
+#   include "Brandenburg-Concerto-Nr-5-Bwv-1047.mid8.c"
+#   endif
+extern AL_Instrument audio_instrument_8bit;
+AL_Instrument *pinstrument= &audio_instrument_8bit;
+
+#elif MIDI_SONG==9
+#   if AUDIO_VOICES==4
+#   include "tubbell1.mid4.c"
+#   elif AUDIO_VOICES==8
+#   include "tubbell1.mid8.c"
+#   endif
+extern AL_Instrument audio_instrument_vibraphone;
+AL_Instrument *pinstrument= &audio_instrument_vibraphone;
+
 // not good
-//#include "Brandenburg-Concerto-Nr-5-Bwv-1047.mid.c"
+// #elif MIDI_SONG==9
+// #include "blister.mid8.c"
+// extern AL_Instrument audio_instrument_piano;
+// AL_Instrument *pinstrument= &audio_instrument_piano;
+
+// #elif MIDI_SONG==10
+// #include "godzilla-30.mid8.c"
+// extern AL_Instrument audio_instrument_synth;
+// AL_Instrument *pinstrument= &audio_instrument_synth;
+
+// not good
 //#include "Hall_and_Oates_-_I_Cant_Go_for_That.mid.c"
+#endif // MIDI_SONG
 
 
 const uint16_t midi_note_frequencies[];
@@ -107,18 +184,27 @@ void midi_player_update(void)
                     // parse event at index
                     uint8_t d0=*midi_player.pevent++;
                     uint8_t d1=*midi_player.pevent++;
+
+                    // v1
+                    //uint16_t note = d0 & 0x7f;
+                    //uint16_t velocity = (d1&0xfe);
+                    //uint16_t voice = ((d0>>6)&0x02)|(d1&0x01);
+                    //uint16_t volume = velocity;
+
+                    // v2
                     uint16_t note = d0 & 0x7f;
-                    uint16_t velocity = (d1&0xfe);
-                    uint16_t channel = ((d0>>6)&0x02)|(d1&0x01);
-                    uint16_t volume = velocity;
+                    uint16_t velocity = (d1&0xfc);
+                    uint16_t voice = ((d0>>5)&0x04)|(d1&0x03);
+                    uint16_t volume = velocity+3;
+
                     if (velocity>0)
                     {
                         uint16_t frequency = midi_note_frequencies[note];
-                        audio_keyon(0,channel,frequency,volume);
+                        audio_keyon(0,voice,frequency,volume);
                     }
                     else
                     {
-                        audio_keyoff(0,channel);
+                        audio_keyoff(0,voice);
                     }
                 }
                 
