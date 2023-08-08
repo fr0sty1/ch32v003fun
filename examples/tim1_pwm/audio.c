@@ -126,7 +126,7 @@ int8_t audio_4octave_mix_sampler(uint16_t index)
 AL_ADSR audio_adsr_on =     {256, 255, 0, 255, -255};
 AL_ADSR audio_adsr_piano =  {256, 255, ADSR_RAMP_MS(050),255*.60,ADSR_RAMP_MS(900)};  
 AL_ADSR audio_adsr_8bit =   {ADSR_RAMP_MS(50), 255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(900)};  
-AL_ADSR audio_adsr_violin = {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
+AL_ADSR audio_adsr_violin = {ADSR_RAMP_MS(150),255, ADSR_RAMP_MS(300), 255*.76, ADSR_RAMP_MS(90)};  
 AL_ADSR audio_adsr_flute =  {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
 AL_ADSR audio_adsr_sax =    {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
 AL_ADSR audio_adsr_tom =    {128, 255, ADSR_RAMP_MS(250) ,  0, 0};  
@@ -139,27 +139,27 @@ AL_Instrument audio_instrument_sine =   { audio_sine_sampler,       &audio_adsr_
 AL_Instrument audio_instrument_triangle={ audio_triangle_sampler,   &audio_adsr_on,         0,0,    0,0};
 AL_Instrument audio_instrument_square = { audio_square_sampler,     &audio_adsr_on,         0,0,    0,0};
 AL_Instrument audio_instrument_sawtooth={ audio_sawtooth_sampler,   &audio_adsr_on,         0,0,    0,0};
-AL_Instrument audio_instrument_4octave_sine= { audio_4octave_sine_sampler,&audio_adsr_on,        0,0,    0,0};
-AL_Instrument audio_instrument_4octave_sawtooth= { audio_4octave_mix_sampler,&audio_adsr_on,        0,0,    0,0};
+AL_Instrument audio_instrument_4octave_sine= { audio_4octave_sine_sampler,&audio_adsr_on,   0,0,    0,0};
+AL_Instrument audio_instrument_4octave_sawtooth= { audio_4octave_mix_sampler,&audio_adsr_on,0,0,    0,0};
 
 AL_Instrument audio_instrument_piano =  { audio_sine_sampler,       &audio_adsr_piano,      0,0,    0,0};
 AL_Instrument audio_instrument_organ =  { audio_triangle_sampler,   &audio_adsr_piano,      0,0,    0,0};
-AL_Instrument audio_instrument_fatorgan =  { audio_4octave_mix_sampler,&audio_adsr_piano,      0,0,    0,0};
+AL_Instrument audio_instrument_fat_organ={ audio_4octave_mix_sampler,&audio_adsr_piano,   0,0,    0,0};
 AL_Instrument audio_instrument_synth =  { audio_sawtooth_sampler,   &audio_adsr_piano,      0,0,    0,0};
 AL_Instrument audio_instrument_8bit =   { audio_square_sampler,     &audio_adsr_8bit,       0,0,    0,0};
-AL_Instrument audio_instrument_vibraphone={ audio_sine_sampler,     &audio_adsr_piano,      4,1,    2,1};
+AL_Instrument audio_instrument_vibraphone={ audio_sine_sampler,     &audio_adsr_piano,      4<<4,1<<4,    2<<4,1<<4};
 
-//AL_Instrument audio_instrument_violin = { audio_sawtooth_sampler,   &audio_adsr_violin,     4,1,    2,1};
-//AL_Instrument audio_instrument_violin = { audio_sawtooth_sampler,   &audio_adsr_violin,     4,1,    2,1};
+AL_Instrument audio_instrument_violin = { audio_sawtooth_sampler,   &audio_adsr_violin,     48,4,    32,4};
+//AL_Instrument audio_instrument_violin = { audio_sawtooth_sampler,   &audio_adsr_violin,     4<<4,1<<4,    2<<4,1<<4};
 
 AL_Instrument audio_instrument_drum =   { audio_noise2_sampler,     &audio_adsr_piano,      0,0,    0,0};
-AL_Instrument audio_instrument_hihat =  { audio_noise2_sampler,     &audio_adsr_hihat,      5,-1,   0,0};
-AL_Instrument audio_instrument_snare =  { audio_noise2_sampler,     &audio_adsr_tom,        1000,-1,0,0};
-AL_Instrument audio_instrument_cymbol = { audio_noise2_sampler,     &audio_adsr_cymbol,     50,-5,  0,0};
-AL_Instrument audio_instrument_tom =    { audio_sine_sampler,       &audio_adsr_tom,        100,-1, 0,0};
+AL_Instrument audio_instrument_hihat =  { audio_noise2_sampler,     &audio_adsr_hihat,      5<<4,-1<<4,   0,0};
+AL_Instrument audio_instrument_snare =  { audio_noise2_sampler,     &audio_adsr_tom,        1000<<4,-1,0,0};
+AL_Instrument audio_instrument_cymbol = { audio_noise2_sampler,     &audio_adsr_cymbol,     50<<4,-5<<4,  0,0};
+AL_Instrument audio_instrument_tom =    { audio_sine_sampler,       &audio_adsr_tom,        100<<4,-1<<4, 0,0};
 
-AL_Instrument audio_instrument_flute =  { audio_triangle_sampler,   &audio_adsr_flute,      4,1,    2,1};
-AL_Instrument audio_instrument_sax =    { audio_triangle_sampler,   &audio_adsr_sax,        4,1,    2,1};
+AL_Instrument audio_instrument_flute =  { audio_triangle_sampler,   &audio_adsr_flute,      4<<4,1<<4,    2<<4,1<<4};
+AL_Instrument audio_instrument_sax =    { audio_triangle_sampler,   &audio_adsr_sax,        4<<4,1<<4,    2<<4,1<<4};
 
 // harpsicord
 
@@ -302,8 +302,8 @@ void audio_update( void )
                 if (pvoice->instrument!=NULL)
                 {
                     // there is an instrument, process
-                    pvoice->position += pvoice->delta + pvoice->vibrato;
-                    int16_t sample = (int16_t) pvoice->instrument->sample(pvoice->position + pvoice->pitchbend);
+                    pvoice->position += pvoice->delta + (pvoice->vibrato>>4) + pvoice->pitchbend;
+                    int16_t sample = (int16_t) pvoice->instrument->sample(pvoice->position);
                     pvoice->output_value=audio_volume_sample_multiply(pvoice->sample_volume, sample);
                     //pvoice->output_value=128-pvoice->adsr_volume;
                     //printf("%d %d %d %d %d \n",voice,pvoice->position, sample, pvoice->output_value, pvoice->sample_volume);
@@ -426,7 +426,7 @@ void audio_update( void )
 // todo tremolo is pushing volumes over 255
                 // Calculate volume to be applied to the sampler
                 // Note: Composite volume is applied to ADSR and tremolo parameters in keyon
-                pvoice->sample_volume = pvoice->adsr_volume + pvoice->tremolo;
+                pvoice->sample_volume = pvoice->adsr_volume + (pvoice->tremolo>>4);
                 //printf("adsr: %c %d\n",pvoice->adsr_phase,pvoice->adsr_volume);
             }
         }
