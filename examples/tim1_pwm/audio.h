@@ -11,30 +11,37 @@
                     Tremelo     Tremelo (cyclic volume modulation)
                     Vibrato     Vibrato (cyclic frequency modulation)
     todo 
-        [] Init to take list of addresses for update
+        Init to take list of addresses for update
         Provide list of addresses to midi init
         Add ISR proc using channel list
+        Add note duration
         Tremelo (clamp)
-        Tremelo use more bits for finer delta
-        ADSR use more bits for finer delta
-        Update volumes in update one per service
         Instrument set (piano, organ, violin, drums)
         readme for audio library and mini midi
         Verify voice pitch bend works
         consistent use of p in pointers
                 
         Single voice sample for frosty
-
 */
 
 #ifndef AUDIO_LIBRARY
 #define AUDIO_LIBRARY
 
 #define AUDIO_CHANNELS (1)
-#define AUDIO_VOICES_POW2 (2)
-#define AUDIO_VOICES (1<<AUDIO_VOICES_POW2)
-#define AUDIO_FIFO_SIZE_POW2 (6)
-#define AUDIO_FIFO_SIZE (1<<AUDIO_FIFO_SIZE_POW2)
+
+#if 0
+// 4 voice presets
+#   define AUDIO_VOICES_POW2 (2)
+#   define AUDIO_VOICES (1<<AUDIO_VOICES_POW2)
+#   define AUDIO_FIFO_SIZE_POW2 (7)
+#   define AUDIO_FIFO_SIZE (1<<AUDIO_FIFO_SIZE_POW2)
+#else
+// 8 voice presets
+#   define AUDIO_VOICES_POW2 (3)
+#   define AUDIO_VOICES (1<<AUDIO_VOICES_POW2)
+#   define AUDIO_FIFO_SIZE_POW2 (10)
+#   define AUDIO_FIFO_SIZE (1<<AUDIO_FIFO_SIZE_POW2)
+#endif
 
 #define AUDIO_UPDATE_FREQUENCY (44100)
 // 44100 Hz /441 = 100 Hz or update every 10MS
