@@ -604,7 +604,8 @@ uint8_t fifo_read(AL_FIFO* fifo)
     if (fifo->free == AUDIO_FIFO_SIZE)
     {
         // FIFO empty
-        return 128;
+        // return the last value in the fifo
+        return fifo->audio_fifo[(fifo->index_tail-1)&((1<<AUDIO_FIFO_SIZE_POW2)-1)];
     }
     else
     {
