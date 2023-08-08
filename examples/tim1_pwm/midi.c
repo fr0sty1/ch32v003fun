@@ -10,7 +10,16 @@
 #include <stdbool.h>
 
 // Song to play
-#define MIDI_SONG 2
+// 1 Toccata and Fugue in Dm
+// 2 Fur Elise
+// 3 Brandenburg Concerto #3
+// 4 Korobeiniki (Tetris theme)
+// 5 In the hall of the Mountain King
+// 6 Super Mario Bros Theme
+// 7 Sweet Child of Mine
+// 8 Brandenburg-Concerto-Nr-5-Bwv-1047
+// 9 Tubular Bells (The Exorcist Theme)
+#define MIDI_SONG 7
 
 #if MIDI_SONG==1
 #   if AUDIO_VOICES==4
@@ -56,9 +65,6 @@ AL_Instrument *pinstrument= &audio_instrument_8bit;
 #   endif
 extern AL_Instrument audio_instrument_synth;
 AL_Instrument *pinstrument= &audio_instrument_synth;
-
-//extern AL_Instrument audio_instrument_fat_organ;
-//AL_Instrument *pinstrument= &audio_instrument_fat_organ;
 
 #elif MIDI_SONG==6
 #   if AUDIO_VOICES==4
