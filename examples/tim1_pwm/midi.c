@@ -13,8 +13,8 @@
 //#include "Brandenburg-Concerto-Nr-5-Bwv-1047.mid.c"
 //#include "Toccata-and-Fugue-Dm_midi.c"
 //#include "Fur-Elise.mid.c"
-#include "korobeiniki.mid.c"    
-//#include "In-the-hall-of-the-Mountain-King.mid.c"    
+//#include "korobeiniki.mid.c"    
+#include "In-the-hall-of-the-Mountain-King.mid.c"    
 //#include "Hall_and_Oates_-_I_Cant_Go_for_That.mid.c"
 
 const uint16_t midi_note_frequencies[];
@@ -43,12 +43,14 @@ void midi_player_start_song(uint8_t *psong)
     //extern AL_Instrument audio_instrument_drum;
     //extern AL_Instrument audio_instrument_cymbol;
     //extern AL_Instrument audio_instrument_violin;
-    extern AL_Instrument audio_instrument_8bit;
+    //extern AL_Instrument audio_instrument_8bit;
     //extern AL_Instrument audio_instrument_piano;
     //extern AL_Instrument audio_instrument_bubble;
     //extern AL_Instrument audio_instrument_tom;
+    //extern AL_Instrument audio_instrument_4octave_sawtooth;
+    extern AL_Instrument audio_instrument_fatorgan;
 
-    AL_Instrument *pinstrument= &audio_instrument_8bit;
+    AL_Instrument *pinstrument= &audio_instrument_fatorgan;
     
     audio_set_instrument(0,0,pinstrument);
     audio_set_instrument(0,1,pinstrument);
