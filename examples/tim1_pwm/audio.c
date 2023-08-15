@@ -327,7 +327,10 @@ void audio_update( void )
             }
             pchannel->output_value+=pvoice->output_value;
         }
-        pchannel->output_value>>=AUDIO_VOICES_POW2;
+        // If there is more than one voice then we need to prevent clipping
+        #if AUDIO_VOICES_POW2
+        pchannel->output_value>>=AUDIO_VOICES_POW2-1;
+        #endif
     }
 
      // update audio shape
