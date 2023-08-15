@@ -13,6 +13,8 @@
 #include "audio.h"
 #include "midi.h"
 
+
+
 /*
  * initialize TIM1 for PWM
  */
@@ -29,6 +31,20 @@ void t1pwm_init( void )
 	// GPIO D4 Push-Pull
 	GPIOD->CFGLR &= ~(0xf<<(4*4));
 	GPIOD->CFGLR |= (GPIO_Speed_10MHz | GPIO_CNF_OUT_PP)<<(4*4);
+
+	// Make C1-C7 input
+	for(int i=0; i<=7; ++i)
+	{
+		// config pin for input with pullup
+		GPIOC->CFGLR &= ~(0xf<<(4*i));
+		GPIOC->CFGLR |= (GPIO_Speed_In | GPIO_CNF_IN_PUPD)<<(4*i);
+		
+		// Set input to puldown
+		GPIOC->OUTDR &=~(1<<i);
+
+		// Set input to pullup
+		//GPIOC->OUTDR |= (1<<i);
+	}
 
 	// Reset TIM1 to init all regs
 	RCC->APB2PRSTR |= RCC_APB2Periph_TIM1;
@@ -88,11 +104,57 @@ void TIM1_UP_IRQHandler() {
     }
 }
 
+uint16_t readkeypad(void)
+{
+	/*
+	c0 row 0
+	c1 row 1
+	c2 row 2
+	c3 row 3
+
+	c5 column 0
+	c6 column 1
+	c7 column 2
+	*/
+
+	// PD1-PD7 is input with pullup/down
+	uint16_t value=0;
+	
+	for(int i=0; i<=3; ++i)
+	{
+
+		// set row pin to output
+		GPIOC->CFGLR &= ~(0xf<<(4*i));
+		GPIOC->CFGLR |= (GPIO_Speed_2MHz | GPIO_CNF_OUT_PP)<<(4*i);
+
+		GPIOC->BSHR = (1<<i);	 	 // Turn on row pin
+		
+		// integrate input into value
+		value<<=4;
+		value|=(GPIOC->INDR>>5) & 0x7;
+
+		GPIOC->BSHR = (1<<(16+i)); // Turn row pin off
+
+		// set row pin to input
+		GPIOC->CFGLR &= ~(0xf<<(4*i));
+		GPIOC->CFGLR |= (GPIO_Speed_In | GPIO_CNF_IN_PUPD)<<(4*i);
+	}
+
+	return value;
+}
+
+extern uint8_t song[];
+
 /*
  * entry
  */
 int main()
 {
+
+    // REQUIRED for programming/debugging: SWIO is on PD1. Do not re-use PD1 for multiple functions.
+    // OPTIONAL NRST is on PD7. Not needed, defaults as GPIO in some configurations.
+    // OPTIONAL UART TX is on: PD5. We recommend using SWIO for printf debugging.
+
 	//uint32_t count = 0;
 	
 	SystemInit();
@@ -111,9 +173,73 @@ int main()
 	// Initialize mini midi player
 	midi_player_initialize();
 
+#define INTERVAL1 (2*6000000)
+#define INTERVAL2 (1*6000000)
+
+	uint32_t timertarget=SysTick->CNT+INTERVAL1;
+	uint32_t timerstate=0;
+	uint16_t pitch=90;
+
+	uint16_t keys, pkeys;
+
+	midi_player_start_song(song);
+
 	//printf("looping...\n\r");
-	while(1)
+	while(true)
 	{
+		#if 0
+		keys = readkeypad();
+		if (keys!=pkeys)
+		{
+			//if (keys) printf("Key: %04x\n",keys);
+			pkeys=keys;
+		}
+		
+		switch (keys)
+		{
+			case 0x1000:	// *
+				if ((timertarget-SysTick->CNT) & 0x80000000)
+				{
+					switch (timerstate)
+					{
+						case 0:
+							//GPIOD->BSHR = (1<<4);	 	 // Turn on  D4 for debug profiling
+							//GPIOD->BSHR = (1<<(16+4)); // Turn off D4 for debug profilingtimerstate=0;
+							++timerstate;
+							timertarget+=INTERVAL1;
+							extern AL_Instrument audio_instrument_violin;
+							audio_set_instrument(0,0,&audio_instrument_violin);
+							extern uint16_t midi_note_frequencies[];
+							printf("pitch=%d %d\n",midi_note_frequencies[pitch],pitch);
+							audio_keyon(0,0,midi_note_frequencies[pitch--],255);
+							break;
+
+						case 1:
+							
+							timertarget+=INTERVAL2;
+							timerstate=0;
+							audio_keyoff(0,0);
+							break;
+					}
+				}
+				break;
+
+				// Start the song
+			case 0x4000:	// #
+				midi_player_start_song(song);
+				break;
+		}
+		#else
+		
+		// Restart song if it ends		
+		if (midi_player_playing_song()==false)
+		{
+			// Start the song
+			extern uint8_t song[];
+			midi_player_start_song(song);
+		}
+		#endif		
+		
 			// Keep audio fifo full
 		while (fifo_free(&audio_system.fifo))
 		{
@@ -131,13 +257,9 @@ int main()
 			//GPIOD->BSHR = (1<<(16+4)); // Turn off D4 for debug profiling
 		}
 
-		// Restart song if it ends		
-		if (midi_player_playing_song()==false)
-		{
-			// Start the song
-			extern uint8_t song[];
-			midi_player_start_song(song);
-		}
+
+
+
 		
 		// Do whatever your program needs to do here, so long as it doesn't
 		// starve the audio fifo or disrupt the timer 1 interrupt 
