@@ -1,11 +1,20 @@
 /*
-    Mini midi player for the CH32V003 audio library
-    by D. Scott Williamson 2023
+    Mini MIDI player 
+    (c) 2023 D. Scott Williamson
+    spot1984@gmail.com
+       
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-    todo
-        Provide list of channels and voices for tracks in init
-        Use playback speed for temp
-        correct tempo from midi (convert tempo, time signature, ticks into minimidi ticks)
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>. 
 */
 
 #ifndef MIDI_LIBRARY
@@ -13,18 +22,19 @@
 
 typedef struct
 {
+    uint16_t channel;           // Channel song is playing on
     uint16_t samplespertick;    // 44.1 kHz samples per midi tick
-    uint16_t sample_timer;      // sample timer
-    uint16_t tick_timer;        // ticks until next event
-    uint8_t  *pevent;           // pointer to next event, NULL if not playing
-    uint8_t  first;             // flag needed for first event
+    uint16_t sample_timer;      // Sample timer
+    uint16_t tick_timer;        // Ticks until next event
+    uint8_t  *pevent;           // Pointer to next event, NULL if not playing
+    uint8_t  first;             // Flag needed for first event
 } MIDI_Player;
 
 // Initialize music player
 void midi_player_initialize(void);    
 
 // Start playing a mini midi song
-void midi_player_start_song(uint8_t *psong);
+void midi_player_start_song(uint16_t channel, uint8_t *psong);
 
 // Stop playing a mini midi song
 void midi_player_stop_song(void);

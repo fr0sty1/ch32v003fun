@@ -1,6 +1,20 @@
 /*
-    Mini midi player for the CH32V003 audio library
-    by D. Scott Williamson 2023
+    Mini MIDI player
+    (c) 2023 D. Scott Williamson
+    spot1984@gmail.com
+       
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>. 
 */
 
 #include "ch32v003fun.h"
@@ -19,7 +33,9 @@
 // 7 Sweet Child of Mine
 // 8 Brandenburg-Concerto-Nr-5-Bwv-1047
 // 9 Tubular Bells (The Exorcist Theme)
-#define MIDI_SONG 7
+// 10 Godzilla
+// 11 Blister in the Sun
+#define MIDI_SONG 11
 
 #if MIDI_SONG==1
 #   if AUDIO_VOICES==4
@@ -102,26 +118,23 @@ AL_Instrument *pinstrument= &audio_instrument_8bit;
 extern AL_Instrument audio_instrument_vibraphone;
 AL_Instrument *pinstrument= &audio_instrument_vibraphone;
 
-// not good
-// #elif MIDI_SONG==9
-// #include "blister.mid8.c"
-// extern AL_Instrument audio_instrument_piano;
-// AL_Instrument *pinstrument= &audio_instrument_piano;
+#elif MIDI_SONG==10
+#include "godzilla-30.mid8.c"
+extern AL_Instrument audio_instrument_synth;
+AL_Instrument *pinstrument= &audio_instrument_synth;
 
-// #elif MIDI_SONG==10
-// #include "godzilla-30.mid8.c"
-// extern AL_Instrument audio_instrument_synth;
-// AL_Instrument *pinstrument= &audio_instrument_synth;
+#elif MIDI_SONG==11
+#include "blister.mid8.c"
+extern AL_Instrument audio_instrument_piano;
+AL_Instrument *pinstrument= &audio_instrument_piano;
 
-// not good
-//#include "Hall_and_Oates_-_I_Cant_Go_for_That.mid.c"
 #endif // MIDI_SONG
 
-
-const uint16_t midi_note_frequencies[];
-
-// midi player instance
+// MIDI player instance
 MIDI_Player midi_player;
+
+// MIDI note frequencies C1 through G9
+const uint16_t midi_note_frequencies[];
 
 // Initialize music player
 void midi_player_initialize()
@@ -133,16 +146,19 @@ void midi_player_initialize()
 }
 
 // Start playing a mini midi song
-void midi_player_start_song(uint8_t *psong)
+void midi_player_start_song(uint16_t channel, uint8_t *psong)
 {
-    // set tempo
-    midi_player.samplespertick = AUDIO_UPDATE_FREQUENCY/100;
+    // Save channel
+    midi_player.channel=channel;
+
+    // Set tempo
+    midi_player.samplespertick = (AUDIO_UPDATE_FREQUENCY)/100;
     
-    // set up track instruments
-    audio_set_instrument(0,0,pinstrument);
-    audio_set_instrument(0,1,pinstrument);
-	audio_set_instrument(0,2,pinstrument);
-	audio_set_instrument(0,3,pinstrument);
+    // Set up track instruments
+    for(int voice=0; voice<AUDIO_VOICES; ++voice)
+    {
+        audio_set_instrument(midi_player.channel,voice,pinstrument);
+    }
 
     // start song
     midi_player.pevent=psong;
@@ -153,10 +169,11 @@ void midi_player_start_song(uint8_t *psong)
 // Stop playing a mini midi song
 void midi_player_stop_song(void)
 {
-    audio_keyoff(0,1);
-    audio_keyoff(0,2);
-    audio_keyoff(0,3);
-    audio_keyoff(0,4);
+    // Silence voices on the midi player channel
+    for(int voice=0; voice<AUDIO_VOICES; ++voice)
+    {
+        audio_keyoff(midi_player.channel,voice);
+    }
 
     midi_player.pevent=NULL;
     midi_player.first=false;
@@ -168,7 +185,7 @@ uint16_t midi_player_playing_song(void)
     return midi_player.pevent!=NULL;
 }
 
-// Midi update to be called at 44.1 kHz
+// MIDI update to be called at 100 Hz (every 10ms)
 void midi_player_update(void)
 {
     if (midi_player.pevent)
@@ -181,13 +198,13 @@ void midi_player_update(void)
             {
                 if (midi_player.first)
                 {
-                    // first iteration, skip pending event to first delay 
-                    // (could be optimized if tick parsing was in a routine and called from song start)
+                    // First iteration, skip pending event to first delay 
+                    // (Could be optimized if tick parsing was in a routine and called from song start)
                     midi_player.first=false;
                 }
                 else            
                 {
-                    // parse event at index
+                    // Parse event at index
                     uint8_t d0=*midi_player.pevent++;
                     uint8_t d1=*midi_player.pevent++;
 
@@ -203,14 +220,17 @@ void midi_player_update(void)
                     uint16_t voice = ((d0>>5)&0x04)|(d1&0x03);
                     uint16_t volume = velocity+3;
 
+                    // Velocity determines note on from note off
                     if (velocity>0)
                     {
+                        // Note on
                         uint16_t frequency = midi_note_frequencies[note];
-                        audio_keyon(0,voice,frequency,volume);
+                        audio_keyon(midi_player.channel,voice,frequency,volume);
                     }
                     else
                     {
-                        audio_keyoff(0,voice);
+                        // Note off
+                        audio_keyoff(midi_player.channel,voice);
                     }
                 }
                 
@@ -218,15 +238,18 @@ void midi_player_update(void)
                 switch (tick)
                 {
                     case 0xff:
-                        // end of song
-                        audio_keyoff(0,0);
-                        audio_keyoff(0,1);
-                        audio_keyoff(0,2);
-                        audio_keyoff(0,3);                    
+                        // End of song
+
+                        // Key off all voices
+                        for(int voice=0; voice<AUDIO_VOICES; ++voice)
+                        {
+                            audio_keyoff(midi_player.channel,voice);
+                        }
+                                          
                         midi_player_initialize();
                         return;
                     case 0xfe:
-                        // extended tick
+                        // Extended tick
                         tick=*midi_player.pevent++;
                         tick+=((uint16_t) *midi_player.pevent++)<<8;
                         break;
