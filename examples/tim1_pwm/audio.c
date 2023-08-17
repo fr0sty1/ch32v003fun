@@ -219,20 +219,20 @@ void audio_initialize( void )
     fifo_initialize(&audio_system.fifo);
     for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
     {
-        AL_Channel *pchannel=&audio_system.channel[channel];
-        pchannel->volume=255;
-        pchannel->compositevolume=(255*255>>8);
+        AL_Channel *pChannel=&audio_system.channel[channel];
+        pChannel->volume=255;
+        pChannel->compositevolume=(255*255>>8);
 
         for (uint16_t voice=0;voice<AUDIO_VOICES; ++voice)
         {
-            AL_Voice *pvoice=&pchannel->voice[voice];
-            pvoice->position=0;            
-            pvoice->delta=0;            
-            pvoice->pitchbend=0;            
-            pvoice->volume=255;
-            pvoice->compositevolume=(255*255*255>>16);
-            pvoice->output_value=0;
-            pvoice->pInstrument=NULL;
+            AL_Voice *pVoice=&pChannel->voice[voice];
+            pVoice->position=0;            
+            pVoice->delta=0;            
+            pVoice->pitchbend=0;            
+            pVoice->volume=255;
+            pVoice->compositevolume=(255*255*255>>16);
+            pVoice->output_value=0;
+            pVoice->pInstrument=NULL;
         }
     }    
 
@@ -254,29 +254,29 @@ void audio_update( void )
     {
         for (uint16_t channel=0 ; channel < AUDIO_CHANNELS ; ++channel)
         {
-            AL_Channel *pchannel=&audio_system.channel[channel];
+            AL_Channel *pChannel=&audio_system.channel[channel];
 
             // Update composite channel volumes
             if ( (audio_system.flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) | 
-                (pchannel->flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) )
+                (pChannel->flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) )
             {         
-                pchannel->compositevolume = audio_volume_volume_multiply(audio_system.volume,pchannel->volume);
-                pchannel->flags |= AL_SYSTEM_FLAG_UPDATE_VOLUME;
+                pChannel->compositevolume = audio_volume_volume_multiply(audio_system.volume,pChannel->volume);
+                pChannel->flags |= AL_SYSTEM_FLAG_UPDATE_VOLUME;
             }
 
             // Update composite voice volumes
             for (uint16_t voice=0;voice<AUDIO_VOICES; ++voice)
             {
-                AL_Voice *pvoice=&pchannel->voice[voice];
+                AL_Voice *pVoice=&pChannel->voice[voice];
 
-                if ( (pchannel->flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) |
-                    (pvoice->flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) )
+                if ( (pChannel->flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) |
+                    (pVoice->flags & AL_SYSTEM_FLAG_UPDATE_VOLUME) )
                 {
-                    pvoice->compositevolume = audio_volume_volume_multiply(pchannel->compositevolume,pvoice->volume);              
-                    pvoice->flags &= ~AL_SYSTEM_FLAG_UPDATE_VOLUME;
+                    pVoice->compositevolume = audio_volume_volume_multiply(pChannel->compositevolume,pVoice->volume);              
+                    pVoice->flags &= ~AL_SYSTEM_FLAG_UPDATE_VOLUME;
                 }
             }
-            pchannel->flags&= ~AL_SYSTEM_FLAG_UPDATE_VOLUME;
+            pChannel->flags&= ~AL_SYSTEM_FLAG_UPDATE_VOLUME;
         }
         audio_system.flags &= ~AL_SYSTEM_FLAG_UPDATE_VOLUME;
     }
@@ -284,42 +284,42 @@ void audio_update( void )
     // Update timers of all voice playback parameters
     for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
     {
-        AL_Channel *pchannel=&audio_system.channel[channel];
-        pchannel->output_value=0;
+        AL_Channel *pChannel=&audio_system.channel[channel];
+        pChannel->output_value=0;
         for (uint16_t voice=0;voice<AUDIO_VOICES; ++voice)
         {
-            AL_Voice *pvoice=&pchannel->voice[voice];
-            if (pvoice->playing)
+            AL_Voice *pVoice=&pChannel->voice[voice];
+            if (pVoice->playing)
             {
-                if (pvoice->pInstrument!=NULL)
+                if (pVoice->pInstrument!=NULL)
                 {
                     // There is an instrument, process
-                    pvoice->position += pvoice->delta + (pvoice->vibrato>>4) + pvoice->pitchbend;
-                    int16_t sample = (int16_t) pvoice->pInstrument->sample(pvoice->position);
-                    pvoice->output_value=audio_volume_sample_multiply(pvoice->sample_volume, sample);
+                    pVoice->position += pVoice->delta + (pVoice->vibrato>>4) + pVoice->pitchbend;
+                    int16_t sample = (int16_t) pVoice->pInstrument->sample(pVoice->position);
+                    pVoice->output_value=audio_volume_sample_multiply(pVoice->sample_volume, sample);
                 }
             }
             else
             {
                 // Voice not playing 
                 // Drift value to center 
-                if (pvoice->output_value!=0)
+                if (pVoice->output_value!=0)
                 {
-                    if (pvoice->output_value > 0)
+                    if (pVoice->output_value > 0)
                     {
-                        --pvoice->output_value;
+                        --pVoice->output_value;
                     }
                     else
                     {
-                        ++pvoice->output_value;
+                        ++pVoice->output_value;
                     }  
                 }
             }
-            pchannel->output_value+=pvoice->output_value;
+            pChannel->output_value+=pVoice->output_value;
         }
         // If there is more than one voice then we need to prevent clipping
         #if AUDIO_VOICES_POW2
-        pchannel->output_value>>=AUDIO_VOICES_POW2;
+        pChannel->output_value>>=AUDIO_VOICES_POW2;
         #endif
     }
 
@@ -330,31 +330,31 @@ void audio_update( void )
         // Envelope update
         for (uint16_t channel=0;channel<AUDIO_CHANNELS; ++channel)
         {
-            AL_Channel *pchannel=&audio_system.channel[channel];
+            AL_Channel *pChannel=&audio_system.channel[channel];
             for (uint16_t voice=0;voice<AUDIO_VOICES; ++voice)
             {
-                AL_Voice *pvoice=&pchannel->voice[voice];
-                if (pvoice->playing)
+                AL_Voice *pVoice=&pChannel->voice[voice];
+                if (pVoice->playing)
                 {
-                    AL_ADSR *padsr=&pvoice->adsr_composite;
-                    switch (pvoice->adsr_phase)
+                    AL_ADSR *padsr=&pVoice->ADSR_composite;
+                    switch (pVoice->ADSR_phase)
                     {
                         case 'a':
                             // Attack
-                            pvoice->adsr_volume += padsr->attack_delta;
-                            if (pvoice->adsr_volume >= padsr->attack_peak)
+                            pVoice->ADSR_volume += padsr->attack_delta;
+                            if (pVoice->ADSR_volume >= padsr->attack_peak)
                             {
-                                pvoice->adsr_phase = 'd';
-                                pvoice->adsr_volume = padsr->attack_peak;
+                                pVoice->ADSR_phase = 'd';
+                                pVoice->ADSR_volume = padsr->attack_peak;
                             }
                             break;
                         case 'd':
                             // Decay
-                            pvoice->adsr_volume -= padsr->decay_delta;
-                            if ((pvoice->adsr_volume <= padsr->sustain_value) || (pvoice->adsr_volume <0))
+                            pVoice->ADSR_volume -= padsr->decay_delta;
+                            if ((pVoice->ADSR_volume <= padsr->sustain_value) || (pVoice->ADSR_volume <0))
                             {
-                                pvoice->adsr_phase='s';
-                                pvoice->adsr_volume=padsr->sustain_value;
+                                pVoice->ADSR_phase='s';
+                                pVoice->ADSR_volume=padsr->sustain_value;
                             }
                             break;
                         case 's':
@@ -363,12 +363,12 @@ void audio_update( void )
                             break;
                         case 'r':
                             // Release
-                            pvoice->adsr_volume -= padsr->release_delta;
-                            if (pvoice->adsr_volume < 0)
+                            pVoice->ADSR_volume -= padsr->release_delta;
+                            if (pVoice->ADSR_volume < 0)
                             {
-                                pvoice->adsr_phase='x';
-                                pvoice->adsr_volume=0;
-                                pvoice->playing=false;
+                                pVoice->ADSR_phase='x';
+                                pVoice->ADSR_volume=0;
+                                pVoice->playing=false;
                             }
                             break;   
                         default:
@@ -376,46 +376,46 @@ void audio_update( void )
                             break;                     
                     }
                     // Update vibrato
-                    pvoice->vibrato += pvoice->vibrato_delta;
-                    if (pvoice->vibrato > 0)
+                    pVoice->vibrato += pVoice->vibrato_delta;
+                    if (pVoice->vibrato > 0)
                     {
-                        if (pvoice->vibrato >= pvoice->pInstrument->vibrato_amplitude)
+                        if (pVoice->vibrato >= pVoice->pInstrument->vibrato_amplitude)
                         {
-                            pvoice->vibrato_delta = -pvoice->vibrato_delta;
-                            pvoice->vibrato = (pvoice->pInstrument->vibrato_amplitude<<1)-pvoice->vibrato;
+                            pVoice->vibrato_delta = -pVoice->vibrato_delta;
+                            pVoice->vibrato = (pVoice->pInstrument->vibrato_amplitude<<1)-pVoice->vibrato;
                         }
                     }   
-                    else if (pvoice->vibrato < 0)
+                    else if (pVoice->vibrato < 0)
                     {
-                        if ((-pvoice->vibrato) >= pvoice->pInstrument->vibrato_amplitude)
+                        if ((-pVoice->vibrato) >= pVoice->pInstrument->vibrato_amplitude)
                         {
-                            pvoice->vibrato_delta = -pvoice->vibrato_delta;
-                            pvoice->vibrato = -(pvoice->pInstrument->vibrato_amplitude<<1)-pvoice->vibrato;
+                            pVoice->vibrato_delta = -pVoice->vibrato_delta;
+                            pVoice->vibrato = -(pVoice->pInstrument->vibrato_amplitude<<1)-pVoice->vibrato;
                         }
                     }
                     // Update tremolo
-                    pvoice->tremolo += pvoice->tremolo_delta;
-                    if (pvoice->tremolo>0)
+                    pVoice->tremolo += pVoice->tremolo_delta;
+                    if (pVoice->tremolo>0)
                     {
-                        if (pvoice->tremolo >= pvoice->tremolo_amplitude)
+                        if (pVoice->tremolo >= pVoice->tremolo_amplitude)
                         {
-                            pvoice->tremolo_delta = -pvoice->tremolo_delta;
-                            pvoice->tremolo = (pvoice->tremolo_amplitude << 1) - pvoice->tremolo;
+                            pVoice->tremolo_delta = -pVoice->tremolo_delta;
+                            pVoice->tremolo = (pVoice->tremolo_amplitude << 1) - pVoice->tremolo;
                         }
                     }   
-                    else if (pvoice->tremolo < 0)
+                    else if (pVoice->tremolo < 0)
                     {
-                        if (-pvoice->tremolo > pvoice->tremolo_amplitude)
+                        if (-pVoice->tremolo > pVoice->tremolo_amplitude)
                         {
-                            pvoice->tremolo_delta = -pvoice->tremolo_delta;
-                            pvoice->tremolo = -(pvoice->tremolo_amplitude<<1) - pvoice->tremolo;
+                            pVoice->tremolo_delta = -pVoice->tremolo_delta;
+                            pVoice->tremolo = -(pVoice->tremolo_amplitude<<1) - pVoice->tremolo;
                         }
                     }
 
                     // Calculate volume to be applied to the sampler
                     // Note: Composite volume is applied to ADSR and tremolo parameters in keyon
                     // Note: It is possible for tremolo to push amplitude to clip at high volumes
-                    pvoice->sample_volume = pvoice->adsr_volume + (pvoice->tremolo>>4);
+                    pVoice->sample_volume = pVoice->ADSR_volume + (pVoice->tremolo>>4);
                 }
             }
         }
@@ -493,74 +493,74 @@ void audio_keyon(   uint16_t channel,
                     uint16_t frequency,
                     uint16_t velocity )
 {
-    AL_Voice *pvoice = &audio_system.channel[channel].voice[voice];
+    AL_Voice *pVoice = &audio_system.channel[channel].voice[voice];
     // Rrequency calculations
     // samplerstepspersecond=samplerstepspercycle*cyclespersecond
-    uint32_t samplerstepspersecond= ((uint32_t) frequency)<<16;
+    uint32_t samplerstepspersecond = ((uint32_t) frequency)<<16;
     
     // Potential Optimization:  If AUDIO_UPDATE_FREQUENCY is a power of 2,
     //                          divide can be replaced by a shift
     //                          32768, 16536, 8192
 
     // stepsperupdate=stepspersecond/updatespersecond
-    pvoice->delta=samplerstepspersecond/((uint32_t)AUDIO_UPDATE_FREQUENCY);
+    pVoice->delta=samplerstepspersecond/((uint32_t)AUDIO_UPDATE_FREQUENCY);
     
     // Zero pitch bend for new note
-    pvoice->pitchbend=0;
+    pVoice->pitchbend=0;
 
     // Potential Optimization:  Use a more efficient volume multiply routine 
     //                          with early exit
 
-    //pvoice->position=0;       // commented out to maintain phase if interrupted playing channel
-    //pvoice->output_value=0;   // commented out to prevent audible click
+    //pVoice->position=0;       // commented out to maintain phase if interrupted playing channel
+    //pVoice->output_value=0;   // commented out to prevent audible click
 
-    AL_Instrument *pinstrument=pvoice->pInstrument;
+    AL_Instrument *pInstrument = pVoice->pInstrument;
 
     // Calculate overall voice volume (system*channel*voice*velocity)
-    uint16_t compositevelocityvolume=(uint16_t) ((uint32_t) pvoice->compositevolume * (uint32_t) velocity)>>8;
+    uint16_t compositevelocityvolume = (uint16_t) ((uint32_t) pVoice->compositevolume * (uint32_t) velocity)>>8;
 
     // Potential Optimization:  Only update when velocity or adsr are different 
     //                          (cache compositevolume and instrument)
 
     // Scale ADSR by voice velocity composite volume 
-    AL_ADSR *padsr_instrument = pinstrument->pADSR;
-    AL_ADSR *padsr_voice = &pvoice->adsr_composite;
-    padsr_voice->attack_delta  = (uint16_t) ((uint32_t) padsr_instrument->attack_delta * (uint32_t) compositevelocityvolume)>>8;
-    padsr_voice->attack_peak   = (uint16_t) ((uint32_t) padsr_instrument->attack_peak * (uint32_t) compositevelocityvolume)>>8;
-    padsr_voice->decay_delta   = (uint16_t) ((uint32_t) padsr_instrument->decay_delta * (uint32_t) compositevelocityvolume)>>8;
-    padsr_voice->sustain_value = (uint16_t) ((uint32_t) padsr_instrument->sustain_value * (uint32_t) compositevelocityvolume)>>8;
-    padsr_voice->release_delta = (uint16_t) ((uint32_t) padsr_instrument->release_delta * (uint32_t) compositevelocityvolume)>>8;
+    AL_ADSR *pADSR_instrument = pInstrument->pADSR;
+    AL_ADSR *pADSR_voice = &pVoice->ADSR_composite;
+    pADSR_voice->attack_delta  = (uint16_t) ((uint32_t) pADSR_instrument->attack_delta * (uint32_t) compositevelocityvolume)>>8;
+    pADSR_voice->attack_peak   = (uint16_t) ((uint32_t) pADSR_instrument->attack_peak * (uint32_t) compositevelocityvolume)>>8;
+    pADSR_voice->decay_delta   = (uint16_t) ((uint32_t) pADSR_instrument->decay_delta * (uint32_t) compositevelocityvolume)>>8;
+    pADSR_voice->sustain_value = (uint16_t) ((uint32_t) pADSR_instrument->sustain_value * (uint32_t) compositevelocityvolume)>>8;
+    pADSR_voice->release_delta = (uint16_t) ((uint32_t) pADSR_instrument->release_delta * (uint32_t) compositevelocityvolume)>>8;
     // Start ADSR
-    pvoice->adsr_phase='a';
-    pvoice->adsr_volume=padsr_voice->attack_delta;
+    pVoice->ADSR_phase='a';
+    pVoice->ADSR_volume=pADSR_voice->attack_delta;
 
     // Start vibrato
-    pvoice->vibrato = 
-    pvoice->vibrato_delta = 
-        pinstrument->vibrato_delta;
+    pVoice->vibrato = 
+    pVoice->vibrato_delta = 
+        pInstrument->vibrato_delta;
 
     // Scale tremolo by voice velocity composite volume and start tremolo
-    pvoice->tremolo =
-    pvoice->tremolo_delta =
-        (uint16_t) ((uint32_t) pinstrument->tremolo_delta * (uint32_t) compositevelocityvolume)>>8;
-    pvoice->tremolo_amplitude =        
-        (uint16_t) ((uint32_t) pinstrument->tremolo_amplitude * (uint32_t) compositevelocityvolume)>>8;
+    pVoice->tremolo =
+    pVoice->tremolo_delta =
+        (uint16_t) ((uint32_t) pInstrument->tremolo_delta * (uint32_t) compositevelocityvolume)>>8;
+    pVoice->tremolo_amplitude =        
+        (uint16_t) ((uint32_t) pInstrument->tremolo_amplitude * (uint32_t) compositevelocityvolume)>>8;
 
     // Set the initial sample volume
-    pvoice->sample_volume = pvoice->adsr_volume + pvoice->tremolo;
+    pVoice->sample_volume = pVoice->ADSR_volume + pVoice->tremolo;
 
     // Start the voice playing
-    pvoice->playing=true;
+    pVoice->playing=true;
 }
 
 // Key a note on a voice off (trigger sound decay)
 void audio_keyoff(   uint16_t channel,
                     uint16_t voice)
 {
-    AL_Voice *pvoice = &audio_system.channel[channel].voice[voice];
-    if (pvoice->playing)
+    AL_Voice *pVoice = &audio_system.channel[channel].voice[voice];
+    if (pVoice->playing)
     {
-        pvoice->adsr_phase='r';
+        pVoice->ADSR_phase='r';
     }
 }
 

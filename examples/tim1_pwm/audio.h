@@ -89,9 +89,9 @@ typedef struct AL_Voice
 
     uint8_t playing;        // True if voice is playing
  
-    uint8_t adsr_phase;     // Current phase
-    int16_t adsr_volume;    // Current volume of the envelope
-    AL_ADSR adsr_composite; // ADSR settings scaled by composite volume at keyon
+    uint8_t ADSR_phase;     // Current phase
+    int16_t ADSR_volume;    // Current volume of the envelope
+    AL_ADSR ADSR_composite; // ADSR settings scaled by composite volume at keyon
 
     int16_t vibrato;        // Vibrato value
     int16_t vibrato_delta;  // Vibrato delta
