@@ -13,8 +13,6 @@
 #include "audio.h"
 #include "midi.h"
 
-
-
 /*
  * initialize TIM1 for PWM
  */
@@ -53,21 +51,16 @@ void t1pwm_init( void )
 	// CTLR1: default is up, events generated, edge align
 	// SMCFGR: default clk input is CK_INT
 
-//	 Clock 	 		48,000,000 						
-//	 Prescaler 		4			5			6			7			8			9			10
-//	 Scaled clock 	12,000,000 	9,600,000 	8,000,000 	6,857,143 	6,000,000 	5,333,333 	4,800,000 
-//	 Reload (PWM) 	256			256			256			256			256			256			256
-//	 Act Freq.	 	46,875 	 	37,500 	 	31,250 	 	26,786 	 	23,438 	 	20,833 	 	18,750 
-//	 Target 	 	44,100 	 	32,000 	 	30,000 	 	22,000 	 	22,000 	 	20,000 	 	18,750 
-//	 Reload 		272			300			267			312			273			267			256
-//	 Eff. Freq.	 	44,118 	 	32,000 	 	29,963 	 	21,978 	 	21,978 	 	19,975 	 	18,750 
-
 	// Prescaler 
-	TIM1->PSC = 4-1;
+	// CH32V003RM.pdf 
+	//	10.2.3 Counters and peripherals
+	// 		CK_PSC is input to the prescaler (PSC) for dividing. the PSC is 16-bit and 
+	// 		the actual dividing factor is equal to the value of R16_TIMx_PSC + 1.
+	TIM1->PSC = AUDIO_TIMER_PRESCALER-1;
 	
 	// Auto Reload - sets period and PWM max width
-	TIM1->ATRLR = 272;	
-	
+	TIM1->ATRLR = AUDIO_TIMER_RELOAD;	
+
 	// Reload immediately
 	TIM1->SWEVGR |= TIM_UG;
 	
@@ -182,7 +175,7 @@ int main()
 
 	uint16_t keys, pkeys;
 
-	midi_player_start_song(song);
+	midi_player_start_song(0,song);
 
 	//printf("looping...\n\r");
 	while(true)
@@ -236,7 +229,7 @@ int main()
 		{
 			// Start the song
 			extern uint8_t song[];
-			midi_player_start_song(song);
+			midi_player_start_song(0,song);
 		}
 		#endif		
 		
