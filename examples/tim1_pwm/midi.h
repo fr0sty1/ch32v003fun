@@ -23,7 +23,7 @@
 typedef struct
 {
     uint16_t channel;           // Channel song is playing on
-    uint16_t samplespertick;    // 44.1 kHz samples per midi tick
+    uint16_t samplespertick;    // Samples per 10ms mini-midi tick
     uint16_t sample_timer;      // Sample timer
     uint16_t tick_timer;        // Ticks until next event
     uint8_t  *pevent;           // Pointer to next event, NULL if not playing
