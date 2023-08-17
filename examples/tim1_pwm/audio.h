@@ -1,16 +1,20 @@
 /*
     Audio library
-    by D. Scott Williamson 2023
+    (c) 2023 D. Scott Williamson
+    spot1984@gmail.com
+       
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-    System                      All channels
-        Channel[]               A polyphonic output channel
-            Voice[]             A voice on a channel
-                Instrument      An instrument to be played on a voice
-                    Sampler     A waveform player
-                    ADSR        A envelope shaper
-                    Tremelo     Tremelo (cyclic volume modulation)
-                    Vibrato     Vibrato (cyclic frequency modulation)
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>. 
 */
 
 #ifndef AUDIO_LIBRARY
@@ -51,66 +55,63 @@
 // ADSR envelope
 typedef struct
 {
-    uint16_t attack_delta;  // ramp from 0 to max
-    uint16_t attack_peak;   // attack peak value
-    uint16_t decay_delta;   // ramp from max to sustain value
-    uint16_t sustain_value; // sustain value
-    uint16_t release_delta; // ramp from sustain to 0
+    uint16_t attack_delta;  // Ramp from 0 to max
+    uint16_t attack_peak;   // Attack peak value
+    uint16_t decay_delta;   // Ramp from max to sustain value
+    uint16_t sustain_value; // Sustain value
+    uint16_t release_delta; // Ramp from sustain to 0
 } AL_ADSR;
 
 // AL_Instrument
 // The components that describe an instrument
 typedef struct 
 {
-    int8_t (*sample)(uint16_t index);   // waveform sampler
-    AL_ADSR   *adsr;                // ADSR envelope
-    uint16_t  vibrato_amplitude;    // vibrato amplitude (4 bits fraction)
-    int16_t   vibrato_delta;        // vibrato delta (4 bits fraction)
-    uint16_t  tremolo_amplitude;    // vibrato amplitude (4 bits fraction)
-    int16_t   tremolo_delta;         // vibrato delta (4 bits fraction)
+    int8_t (*sample)(uint16_t index); // waveform sampler
+    AL_ADSR   *pADSR;               // pointer to ADSR envelope
+    uint16_t  vibrato_amplitude;    // Vibrato amplitude (4 bits fraction)
+    int16_t   vibrato_delta;        // Vibrato delta (4 bits fraction)
+    uint16_t  tremolo_amplitude;    // Tremolo amplitude (4 bits fraction)
+    int16_t   tremolo_delta;        // Tremolo delta (4 bits fraction)
 } AL_Instrument;
 
 // AL_Voice
 // A voice plays a single instrument
 typedef struct AL_Voice
 {
-    // todo, reorder members
+    uint16_t position;      // Position in wave table fixed point 0 to 1
+    uint16_t delta;         // Derived from frequency and length of wave table
+    uint16_t pitchbend;     // Pitch bend (delta on delta)
 
-    uint16_t position;  // position in wave table fixed point 0 to 1
-    uint16_t delta;     // derived from frequency and length of wave table
-    uint16_t pitchbend; // pitch bend (delta on delta)
-
-    uint16_t volume;    // 8 bit volume 
+    uint16_t volume;        // 8 bit volume 
     uint16_t compositevolume;  // voice volume * channel volume * master volume
-    uint16_t sample_volume; // the volume applied to samples
-    int16_t output_value;      // value
+    uint16_t sample_volume; // The volume applied to samples
+    int16_t output_value;   // Value
 
-    uint8_t playing;      // todo all voices play all the time now
-//    uint8_t priority;   // to be used for dynamic voice allocation
+    uint8_t playing;        // True if voice is playing
  
-    uint8_t adsr_phase;     // current phase
-    int16_t adsr_volume;    // current volume of the envelope
-    AL_ADSR adsr_composite;    // ADSR settings scaled by composite volume 
+    uint8_t adsr_phase;     // Current phase
+    int16_t adsr_volume;    // Current volume of the envelope
+    AL_ADSR adsr_composite; // ADSR settings scaled by composite volume at keyon
 
-    int16_t vibrato;
-    int16_t vibrato_delta;
+    int16_t vibrato;        // Vibrato value
+    int16_t vibrato_delta;  // Vibrato delta
 
-    int16_t tremolo;
-    int16_t tremolo_delta;
-    int16_t tremolo_amplitude;
+    int16_t tremolo;        // Tremolo value
+    int16_t tremolo_delta;  // Tremolo delta
+    int16_t tremolo_amplitude; // Tremolo amplitude scaled by composite volume at keyon
 
-    AL_Instrument *instrument;
-    uint8_t flags;
+    AL_Instrument *pInstrument; // Pointer to instrument
+    uint8_t flags;          
 } AL_Voice;
 
 // AL Channel
 // A channel is a polyphonic physical output (a single PWM pin)
 typedef struct 
 {
-    AL_Voice voice[AUDIO_VOICES];   // voices in the channel
-    uint16_t volume;                // channel set volume
-    uint16_t compositevolume;       // channel volume * master volume
-    int16_t  output_value;                 // value of all voices in the channel
+    AL_Voice voice[AUDIO_VOICES];   // Voices in the channel
+    uint16_t volume;                // Channel set volume
+    uint16_t compositevolume;       // Channel volume * master volume
+    int16_t  output_value;          // Value of all voices in the channel
     uint8_t flags;
 } AL_Channel;
 
@@ -118,27 +119,25 @@ typedef struct
 // Audio Library FIFO
 typedef struct 
 {
-    volatile uint8_t audio_fifo[AUDIO_FIFO_SIZE];
-    uint16_t  index_head;
-    uint16_t  index_tail;
-    uint16_t  free;
+    volatile uint8_t audio_fifo[AUDIO_FIFO_SIZE]; // FIFO Buffer
+    uint16_t  index_head;   // Index to FIFO head (where data will be added)
+    uint16_t  index_tail;   // Index to FIFO tail (Where data will be read)
+    uint16_t  free;         // Amount of free data in FIFO
 } AL_FIFO;
-
 
 // AL_System is the entire audio system
 typedef struct 
 {
-    AL_Channel channel[AUDIO_CHANNELS]; // polyphonic sound channels
-    uint16_t volume;                    // master volume
-    uint16_t envelopedivider;           // for lower frequency shaping processing
+    AL_Channel channel[AUDIO_CHANNELS]; // Polyphonic sound channels
+    uint16_t volume;                    // Master volume
+    uint16_t envelopedivider;           // For lower frequency shaping processing
     uint8_t flags;
     AL_FIFO fifo;                       // fifo    
 #define AL_SYSTEM_FLAG_UPDATE_VOLUME (1<<0)
 #define AL_SYSTEM_FLAG_UPDATE_COMPOSITE_VOLUME (1<<1)
 } AL_System;
 
-
-
+// Audio system instance
 extern AL_System audio_system;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -179,7 +178,7 @@ inline void audio_set_instrument(   uint16_t channel,
                             uint16_t voice,
                             AL_Instrument *instrument)
 {
-    audio_system.channel[channel].voice[voice].instrument=instrument;
+    audio_system.channel[channel].voice[voice].pInstrument=instrument;
 }
 
 // Key a note on a voice on
