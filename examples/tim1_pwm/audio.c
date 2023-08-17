@@ -239,7 +239,7 @@ void audio_initialize( void )
 #ifdef AUDIO_DEBUG
     printf("Audio initialize\n");
     printf("Audio system has %d channels, each with %d voices\n",AUDIO_CHANNELS,AUDIO_VOICES);
-    printf("Audio sample update frequency is %d Hz\n",AUDIO_UPDATE_FREQUENCY);
+    printf("Audio sample update frequency is %d Hz (actual %d Hz)\n",AUDIO_UPDATE_FREQUENCY, AUDIO_ACTUAL_UPDATE_FREQUENCY);
     printf("Audio shape update frequency is %d Hz\n",AUDIO_UPDATE_FREQUENCY/AUDIO_SHAPE_DIVIDER);
     printf("Audio fifo size is %d (for all channels)\n",AUDIO_FIFO_SIZE);
     printf("sizeof(audio_system)=%d\n",sizeof(audio_system));
@@ -254,8 +254,9 @@ void audio_update( void )
     // master*channel*voice => composite
     // keyon
     //      composite*velocity => notevolume
+    //      ADSR scaled by notevolume
     // playback
-    //                      notevolume*adsr*sample
+    //      (adsr+tremolo)*sample
 
     // Process volumes if any have changed
     if ( audio_system.flags & AL_SYSTEM_FLAG_UPDATE_COMPOSITE_VOLUME)
@@ -329,7 +330,7 @@ void audio_update( void )
         }
         // If there is more than one voice then we need to prevent clipping
         #if AUDIO_VOICES_POW2
-        pchannel->output_value>>=AUDIO_VOICES_POW2-1;
+        pchannel->output_value>>=AUDIO_VOICES_POW2;//-1;
         #endif
     }
 
@@ -439,22 +440,18 @@ void audio_update( void )
 // Get the value of an output pin
 unsigned char audio_get_channel_value(uint16_t channel)
 {   
-    int16_t value = audio_system.channel[channel].output_value+128;
-    // clamp
+    int16_t value = audio_system.channel[channel].output_value+(AUDIO_TIMER_RELOAD/2);
+    // clamp to PWM range (some headroom over the designed 0-255 based on playback frequency)
     if (value<0)  
     {
         value=0;
-        //GPIOD->BSHR = (1<<4);	 	 // Turn on  D4 for debug profiling
-        //GPIOD->BSHR = (1<<(16+4)); // Turn off D4 for debug profilingtimerstate=0;
     }
-    if (value>255) 
+    if (value>AUDIO_TIMER_RELOAD) 
     {
-        value=255;
-        //GPIOD->BSHR = (1<<4);	 	 // Turn on  D4 for debug profiling
-        //GPIOD->BSHR = (1<<(16+4)); // Turn off D4 for debug profilingtimerstate=0;
+        value=AUDIO_TIMER_RELOAD;
     }
 
-    return (unsigned char) value+1;
+    return (unsigned char) value;
 }
 
 // Set audio system master volume
