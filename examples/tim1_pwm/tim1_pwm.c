@@ -169,12 +169,13 @@ int main()
 #define INTERVAL1 (2*6000000)
 #define INTERVAL2 (1*6000000)
 
+/*
 	uint32_t timertarget=SysTick->CNT+INTERVAL1;
 	uint32_t timerstate=0;
 	uint16_t pitch=90;
 
 	uint16_t keys, pkeys;
-
+*/
 	midi_player_start_song(0,song);
 
 	//printf("looping...\n\r");
