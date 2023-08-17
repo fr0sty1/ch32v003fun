@@ -10,18 +10,7 @@
                     ADSR        A envelope shaper
                     Tremelo     Tremelo (cyclic volume modulation)
                     Vibrato     Vibrato (cyclic frequency modulation)
-    todo 
-        Init to take list of addresses for update
-        Provide list of addresses to midi init
-        Add ISR proc using channel list
-        Add note duration
-        Tremelo (clamp)
-        Instrument set (piano, organ, violin, drums)
-        readme for audio library and mini midi
-        Verify voice pitch bend works
-        consistent use of p in pointers
-                
-        Single voice sample for frosty
+
 */
 
 #ifndef AUDIO_LIBRARY
@@ -31,7 +20,7 @@
 
 #if 0
 // 4 voice presets
-#   #define AUDIO_UPDATE_FREQUENCY (44100)
+#   #define AUDIO_UPDATE_FREQUENCY (22000)
 #   define AUDIO_VOICES_POW2 (2)
 #   define AUDIO_VOICES (1<<AUDIO_VOICES_POW2)
 #   define AUDIO_FIFO_SIZE_POW2 (7)
@@ -158,7 +147,7 @@ extern AL_System audio_system;
 // Auido system initialization 
 void audio_initialize( void );
 
-// Audio system update to be called at 44.1 kHz
+// Audio system update (update channel values for fifo)
 void audio_update( void );
 
 // Return channel value to be sent to PWM
@@ -171,7 +160,6 @@ void audio_set_master_volume(uint16_t volume );
 // Set audio system channel volume
 void audio_set_channel_volume(uint16_t channel,
                             uint16_t volume );
-
 
 // Set audio system voice volume
 void audio_set_voice_volume(uint16_t channel,
