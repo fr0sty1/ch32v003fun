@@ -17,10 +17,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. 
 */
 
-#include "ch32v003fun.h"
-#include "audio.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "audio.h"
 
 // Audio system instance
 AL_System audio_system;
@@ -30,7 +30,7 @@ int8_t audio_noise1_sampler(uint16_t index)
 {
 
     static int8_t value;
-    value = (SysTick->CNT) ^value;  // tinny white noise
+    value = (AUDIO_NOISE_SOURCE) ^value;  // tinny white noise
     return value;
 }
 
@@ -39,14 +39,14 @@ int8_t audio_noise2_sampler(uint16_t index)
 {
 
     static int8_t value;
-    value = (SysTick->CNT) ^value^index;  // midtone white noise, index changes pitch
+    value = (AUDIO_NOISE_SOURCE) ^value^index;  // midtone white noise, index changes pitch
     return value;
 }
 
 // Robot sampler
 int8_t audio_robot_sampler(uint16_t index)
 {
-   return SysTick->CNT^index;  // midtone robotfrequency changes pitch
+   return (AUDIO_NOISE_SOURCE)^index;  // midtone robotfrequency changes pitch
 }
 
 // Sawtooth sampler
