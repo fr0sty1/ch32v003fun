@@ -1,4 +1,5 @@
 /*
+    audio.h
     Audio library
     (c) 2023 D. Scott Williamson
     spot1984@gmail.com
@@ -20,45 +21,6 @@
 
 #ifndef AUDIO_LIBRARY
 #define AUDIO_LIBRARY
-
-///// User configuration and ch32v003 section
-#include "ch32v003fun.h"
-
-// Audio Library configuration definitions (modify these to configure library)
-#define AUDIO_CHANNELS (1)
-#if 0
-// 4 voice presets
-#   #define AUDIO_UPDATE_FREQUENCY (22000)
-#   define AUDIO_VOICES_POW2 (2)
-#   define AUDIO_FIFO_SIZE_POW2 (7)
-#else
-// 8 voice presets
-// The PWM frequency and the audio playback update frequency
-#   define AUDIO_UPDATE_FREQUENCY (16000)
-// Audio voices power of 2, actual voices are 2^AUDIO_VOICES_POW2
-// Examples:
-// AUDIO_VOICES_POW2 (0) => 1 voice
-// AUDIO_VOICES_POW2 (1) => 2 voices
-// AUDIO_VOICES_POW2 (2) => 4 voices
-// AUDIO_VOICES_POW2 (3) => 8 voices
-#   define AUDIO_VOICES_POW2 (3)
-// Audio FIFO size power of 2, actual FIFO size in bytes is 2^AUDIO_FIFO_SIZE_POW2
-// Example: 
-// AUDIO_FIFO_SIZE_POW2 (7) => 128 byte FIFO (used for all voices and channels)
-#   define AUDIO_FIFO_SIZE_POW2 (7)
-#endif
-
-// Uncomment the following line for debugging output
-//#define AUDIO_DEBUG
-
-// ch32v003 specific definitions (do not modify below this line)
-// Audio Timer Prescaler and reload value
-#define AUDIO_TIMER_PRESCALER (FUNCONF_SYSTEM_CORE_CLOCK/(256*(AUDIO_UPDATE_FREQUENCY)))
-#define AUDIO_TIMER_RELOAD (FUNCONF_SYSTEM_CORE_CLOCK/((AUDIO_TIMER_PRESCALER)*(AUDIO_UPDATE_FREQUENCY)))
-#define AUDIO_ACTUAL_UPDATE_FREQUENCY (FUNCONF_SYSTEM_CORE_CLOCK/(AUDIO_TIMER_PRESCALER*AUDIO_TIMER_RELOAD))
-#define AUDIO_NOISE_SOURCE (SysTick->CNT) 
-
-///// End configuration
 
 // Verify configurarion has been defined
 #ifndef AUDIO_CHANNELS
@@ -87,12 +49,17 @@
 #define AUDIO_VOICES (1<<AUDIO_VOICES_POW2)
 
 // Audio FIFO size in bytes
-
 #define AUDIO_FIFO_SIZE (1<<AUDIO_FIFO_SIZE_POW2)
 
 // Audio shape update divider (100 Hz or update every 10MS)
 #define AUDIO_SHAPE_DIVIDER (AUDIO_UPDATE_FREQUENCY/100)
 
+// Values needed from HAL 
+extern uint32_t audio_noise_source();
+extern uint32_t audio_timer_reload();
+#ifdef AUDIO_DEBUG
+    extern uint16_t audio_actual_update_frequency( void );
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Audio library structures

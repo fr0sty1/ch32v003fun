@@ -1,4 +1,5 @@
 /*
+    audio.c
     Audio library
     (c) 2023 D. Scott Williamson
     spot1984@gmail.com
@@ -20,6 +21,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+//#include "audio_configuration.h"
 #include "audio.h"
 
 // Audio system instance
@@ -30,7 +32,7 @@ int8_t audio_noise1_sampler(uint16_t index)
 {
 
     static int8_t value;
-    value = (AUDIO_NOISE_SOURCE) ^value;  // tinny white noise
+    value = (audio_noise_source()) ^value;  // tinny white noise
     return value;
 }
 
@@ -39,14 +41,14 @@ int8_t audio_noise2_sampler(uint16_t index)
 {
 
     static int8_t value;
-    value = (AUDIO_NOISE_SOURCE) ^value^index;  // midtone white noise, index changes pitch
+    value = (audio_noise_source()) ^value^index;  // midtone white noise, index changes pitch
     return value;
 }
 
 // Robot sampler
 int8_t audio_robot_sampler(uint16_t index)
 {
-   return (AUDIO_NOISE_SOURCE)^index;  // midtone robotfrequency changes pitch
+   return (audio_noise_source())^index;  // midtone robotfrequency changes pitch
 }
 
 // Sawtooth sampler
@@ -237,9 +239,11 @@ void audio_initialize( void )
     }    
 
 #ifdef AUDIO_DEBUG
+    // Need actual playback speed from HAL
+    extern uint16_t audio_actual_update_frequency( void );
     printf("Audio initialize\n");
     printf("Audio system has %d channels, each with %d voices\n",AUDIO_CHANNELS,AUDIO_VOICES);
-    printf("Audio sample update frequency is %d Hz (actual %d Hz)\n",AUDIO_UPDATE_FREQUENCY, AUDIO_ACTUAL_UPDATE_FREQUENCY);
+    printf("Audio sample update frequency is %d Hz (actual %d Hz)\n",AUDIO_UPDATE_FREQUENCY, audio_actual_update_frequency());
     printf("Audio shape update frequency is %d Hz\n",AUDIO_UPDATE_FREQUENCY/AUDIO_SHAPE_DIVIDER);
     printf("Audio fifo size is %d (for all channels)\n",AUDIO_FIFO_SIZE);
     printf("sizeof(audio_system)=%d\n",sizeof(audio_system));
@@ -426,16 +430,16 @@ void audio_update( void )
 unsigned char audio_get_channel_value(uint16_t channel)
 {   
     // Make the signed output value a positive integer, zero at half the AUDIO_TIMER_RELOAD
-    int16_t value = audio_system.channel[channel].output_value+(AUDIO_TIMER_RELOAD/2);
+    int16_t value = audio_system.channel[channel].output_value+(audio_timer_reload()>>1);
 
     // Clamp to PWM range (some headroom over the designed 0-255 based on playback frequency)
     if (value<0)  
     {
         value=0;
     }
-    if (value>AUDIO_TIMER_RELOAD) 
+    if (value > audio_timer_reload()) 
     {
-        value=AUDIO_TIMER_RELOAD;
+        value = audio_timer_reload();
     }
 
     return (unsigned char) value;

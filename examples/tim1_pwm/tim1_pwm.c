@@ -10,6 +10,8 @@
 #include "ch32v003fun.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include "audio_configuration.h"
+#include "audio_hal_ch32v003.h"
 #include "audio.h"
 #include "midi.h"
 
@@ -56,10 +58,10 @@ void t1pwm_init( void )
 	//	10.2.3 Counters and peripherals
 	// 		CK_PSC is input to the prescaler (PSC) for dividing. the PSC is 16-bit and 
 	// 		the actual dividing factor is equal to the value of R16_TIMx_PSC + 1.
-	TIM1->PSC = AUDIO_TIMER_PRESCALER-1;
+	TIM1->PSC = audio_timer_prescaler()-1;
 	
 	// Auto Reload - sets period and PWM max width
-	TIM1->ATRLR = AUDIO_TIMER_RELOAD;	
+	TIM1->ATRLR = audio_timer_reload();	
 
 	// Reload immediately
 	TIM1->SWEVGR |= TIM_UG;
