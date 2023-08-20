@@ -17,12 +17,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. 
 */
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include "audio_configuration.h"
+#include "ch32v003fun.h"
 #include "audio.h"
 #include "midi.h"
+#include <stdio.h>
+#include <stdbool.h>
 
 // Song to play
 // 1 Toccata and Fugue in Dm
@@ -36,7 +35,7 @@
 // 9 Tubular Bells (The Exorcist Theme)
 // 10 Godzilla
 // 11 Blister in the Sun
-#define MIDI_SONG 8
+#define MIDI_SONG 11
 
 #if MIDI_SONG==1
 #   if AUDIO_VOICES==4
