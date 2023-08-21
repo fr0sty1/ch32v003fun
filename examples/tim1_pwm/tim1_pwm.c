@@ -10,8 +10,9 @@
 #include "ch32v003fun.h"
 #include <stdio.h>
 #include <stdbool.h>
-#include "audio.h"
-#include "midi.h"
+#include "audio_shim.h"
+//#include "../../audiolib/audio.h"
+//#include "../../audiolib/midi.h"
 
 /*
  * initialize TIM1 for PWM

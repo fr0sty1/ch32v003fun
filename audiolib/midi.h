@@ -1,4 +1,5 @@
 /*
+    midi.h
     Mini MIDI player 
     (c) 2023 D. Scott Williamson
     spot1984@gmail.com

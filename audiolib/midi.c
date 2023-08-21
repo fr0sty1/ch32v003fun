@@ -17,11 +17,51 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. 
 */
 
-#include "ch32v003fun.h"
-#include "audio.h"
-#include "midi.h"
+// This source file is device independent and can be compiled without 
+// HAL or configuration, these defines provide meaningless values that permit
+// compilation to demonstrate there are no external dependencies.
+
+// Configuration defines
+#ifndef AUDIO_CHANNELS
+#   define AUDIO_CHANNELS 0
+#   warning Using AUDIO_CHANNELS dummy parameter
+#endif
+#ifndef AUDIO_VOICES_POW2
+#   define AUDIO_VOICES_POW2 0
+#   warning Using AUDIO_VOICES_POW2 dummy parameter
+#endif
+#ifndef AUDIO_UPDATE_FREQUENCY
+#   define AUDIO_UPDATE_FREQUENCY 0
+#   warning Using AUDIO_UPDATE_FREQUENCY dummy parameter
+#endif
+#ifndef AUDIO_FIFO_SIZE_POW2
+#   define AUDIO_FIFO_SIZE_POW2 0
+#   warning Using AUDIO_FIFO_SIZE_POW2 dummy parameter
+#endif
+
+// HAL defines
+#ifndef AUDIO_TIMER_PRESCALER
+#   define AUDIO_TIMER_PRESCALER 0
+#   warning Using AUDIO_TIMER_PRESCALER dummy parameter
+#endif
+#ifndef AUDIO_TIMER_RELOAD
+#   define AUDIO_TIMER_RELOAD 0
+#   warning Using AUDIO_TIMER_RELOAD dummy parameter
+#endif
+#ifndef AUDIO_ACTUAL_UPDATE_FREQUENCY
+#   define AUDIO_ACTUAL_UPDATE_FREQUENCY 0
+#   warning Using AUDIO_ACTUAL_UPDATE_FREQUENCY dummy parameter
+#endif
+#ifndef AUDIO_NOISE_SOURCE
+#   define AUDIO_NOISE_SOURCE 0
+#   warning Using AUDIO_NOISE_SOURCE dummy parameter
+#endif
+
+#include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "audio.h"
+#include "midi.h"
 
 // Song to play
 // 1 Toccata and Fugue in Dm
@@ -35,7 +75,7 @@
 // 9 Tubular Bells (The Exorcist Theme)
 // 10 Godzilla
 // 11 Blister in the Sun
-#define MIDI_SONG 11
+#define MIDI_SONG 1
 
 #if MIDI_SONG==1
 #   if AUDIO_VOICES==4
