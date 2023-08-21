@@ -63,113 +63,6 @@
 #include "audio.h"
 #include "midi.h"
 
-// Song to play
-// 1 Toccata and Fugue in Dm
-// 2 Fur Elise
-// 3 Brandenburg Concerto #3
-// 4 Korobeiniki (Tetris theme)
-// 5 In the hall of the Mountain King
-// 6 Super Mario Bros Theme
-// 7 Sweet Child of Mine
-// 8 Brandenburg-Concerto-Nr-5-Bwv-1047
-// 9 Tubular Bells (The Exorcist Theme)
-// 10 Godzilla
-// 11 Blister in the Sun
-#define MIDI_SONG 1
-
-#if MIDI_SONG==1
-#   if AUDIO_VOICES==4
-#   include "Toccata-and-Fugue-Dm.mid4.c"
-#   elif AUDIO_VOICES==8
-#   include "Toccata-and-Fugue-Dm.mid8.c"
-#   endif
-extern AL_Instrument audio_instrument_synth;
-AL_Instrument *pinstrument= &audio_instrument_synth;
-
-#elif MIDI_SONG==2
-#   if AUDIO_VOICES==4
-#   include "Fur_Elise.mid4.c"
-#   elif AUDIO_VOICES==8
-#   include "Fur_Elise.mid8.c"
-#   endif
-extern AL_Instrument audio_instrument_piano;
-AL_Instrument *pinstrument= &audio_instrument_piano;
-
-#elif MIDI_SONG==3
-#   if AUDIO_VOICES==4
-#   include "brand3.mid4.c"
-#   elif AUDIO_VOICES==8
-#   include "brand3.mid8.c"
-#   endif
-extern AL_Instrument audio_instrument_synth;
-AL_Instrument *pinstrument= &audio_instrument_synth;
-
-#elif MIDI_SONG==4
-#   if AUDIO_VOICES==4
-#   include "korobeiniki.mid4.c"
-#   elif AUDIO_VOICES==8
-#   include "korobeiniki.mid8.c"
-#   endif
-extern AL_Instrument audio_instrument_8bit;
-AL_Instrument *pinstrument= &audio_instrument_8bit;
-
-#elif MIDI_SONG==5
-#   if AUDIO_VOICES==4
-#   include "In_the_hall_of_the_Mountain_King.mid4.c"
-#   elif AUDIO_VOICES==8
-#   include "In_the_hall_of_the_Mountain_King.mid8.c"
-#   endif
-extern AL_Instrument audio_instrument_synth;
-AL_Instrument *pinstrument= &audio_instrument_synth;
-
-#elif MIDI_SONG==6
-#   if AUDIO_VOICES==4
-#   include "Super_Mario_Bros_Theme.mid4.c"
-#   elif AUDIO_VOICES==8
-#   include "Super_Mario_Bros_Theme.mid8.c"
-#   endif
-extern AL_Instrument audio_instrument_violin;
-AL_Instrument *pinstrument= &audio_instrument_violin;
-
-#elif MIDI_SONG==7
-#   if AUDIO_VOICES==4
-#   include "sweetchildofmine.mid4.c"
-#   elif AUDIO_VOICES==8
-#   include "sweetchildofmine.mid8.c"
-#   endif
-extern AL_Instrument audio_instrument_violin;
-AL_Instrument *pinstrument= &audio_instrument_violin;
-
-#elif MIDI_SONG==8
-#   if AUDIO_VOICES==4
-#   include "Brandenburg-Concerto-Nr-5-Bwv-1047.mid4.c"
-#   elif AUDIO_VOICES==8
-#   include "Brandenburg-Concerto-Nr-5-Bwv-1047.mid8.c"
-#   endif
-extern AL_Instrument audio_instrument_8bit;
-AL_Instrument *pinstrument= &audio_instrument_8bit;
-
-#elif MIDI_SONG==9
-#   if AUDIO_VOICES==4
-#   include "tubbell1.mid4.c"
-#   elif AUDIO_VOICES==8
-#   include "tubbell1.mid8.c"
-#   endif
-extern AL_Instrument audio_instrument_vibraphone;
-AL_Instrument *pinstrument= &audio_instrument_vibraphone;
-
-#elif MIDI_SONG==10
-#include "godzilla-30.mid8.c"
-extern AL_Instrument audio_instrument_synth;
-AL_Instrument *pinstrument= &audio_instrument_synth;
-
-#elif MIDI_SONG==11
-#include "blister.mid8.c"
-extern AL_Instrument audio_instrument_piano;
-AL_Instrument *pinstrument= &audio_instrument_piano;
-
-#endif // MIDI_SONG
-
 // MIDI player instance
 MIDI_Player midi_player;
 
@@ -194,12 +87,6 @@ void midi_player_start_song(uint16_t channel, uint8_t *psong)
     // Set tempo
     midi_player.samplespertick = (AUDIO_UPDATE_FREQUENCY)/100;
     
-    // Set up track instruments
-    for(int voice=0; voice<AUDIO_VOICES; ++voice)
-    {
-        audio_set_instrument(midi_player.channel,voice,pinstrument);
-    }
-
     // start song
     midi_player.pevent=psong;
     midi_player.first=true;

@@ -10,6 +10,7 @@
     Copies and/or modifications of this file are considered uses of the audio and music 
     libraries configuration interface and do not constitute modification of the 
     libraries Source provided under the LGPL 3.0 license.
+    
 */
 
 // Audio library configuration header (unlicensed)
