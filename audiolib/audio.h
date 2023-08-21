@@ -55,7 +55,6 @@
 // Audio shape update divider (100 Hz or update every 10MS)
 #define AUDIO_SHAPE_DIVIDER (AUDIO_UPDATE_FREQUENCY/100)
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Audio library structures
 
