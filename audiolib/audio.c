@@ -176,45 +176,45 @@ int8_t audio_4octave_mix_sampler(uint16_t index)
 //#define ADSR_VOLUME(pct) (255*(pct)/100)
 
 // ADSR parameters: attack delta, attack peak, decay delta, sustain value, release delta
-AL_ADSR audio_adsr_on =     {256, 255, 0, 255, -255};
-AL_ADSR audio_adsr_piano =  {256, 255, ADSR_RAMP_MS(050),255*.60,ADSR_RAMP_MS(900)};  
-AL_ADSR audio_adsr_8bit =   {ADSR_RAMP_MS(50), 255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(900)};  
-AL_ADSR audio_adsr_violin = {ADSR_RAMP_MS(150),255, ADSR_RAMP_MS(300), 255*.76, ADSR_RAMP_MS(90)};  
-AL_ADSR audio_adsr_flute =  {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
-AL_ADSR audio_adsr_sax =    {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
-AL_ADSR audio_adsr_tom =    {128, 255, ADSR_RAMP_MS(250) ,  0, 0};  
-AL_ADSR audio_adsr_snare =  {128, 255, ADSR_RAMP_MS(3000),  0, 0};  
-AL_ADSR audio_adsr_cymbol = {128, 255, ADSR_RAMP_MS(650) ,  0, 0};  
-AL_ADSR audio_adsr_hihat =  {128, 255, ADSR_RAMP_MS(1000), 64, ADSR_RAMP_MS(150)};  
+const AL_ADSR audio_adsr_on =     {256, 255, 0, 255, -255};
+const AL_ADSR audio_adsr_piano =  {256, 255, ADSR_RAMP_MS(050),255*.60,ADSR_RAMP_MS(900)};  
+const AL_ADSR audio_adsr_8bit =   {ADSR_RAMP_MS(50), 255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(900)};  
+const AL_ADSR audio_adsr_violin = {ADSR_RAMP_MS(150),255, ADSR_RAMP_MS(300), 255*.76, ADSR_RAMP_MS(90)};  
+const AL_ADSR audio_adsr_flute =  {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
+const AL_ADSR audio_adsr_sax =    {ADSR_RAMP_MS(350),255, ADSR_RAMP_MS(300), 255*.66, ADSR_RAMP_MS(90)};  
+const AL_ADSR audio_adsr_tom =    {128, 255, ADSR_RAMP_MS(250) ,  0, 0};  
+const AL_ADSR audio_adsr_snare =  {128, 255, ADSR_RAMP_MS(3000),  0, 0};  
+const AL_ADSR audio_adsr_cymbol = {128, 255, ADSR_RAMP_MS(650) ,  0, 0};  
+const AL_ADSR audio_adsr_hihat =  {128, 255, ADSR_RAMP_MS(1000), 64, ADSR_RAMP_MS(150)};  
     
 // Instrument: sampler, ADSR, vibrato amplitude, vibrato delta, tremolo amplitude, tremolo delta
-AL_Instrument audio_instrument_sine =   { audio_sine_sampler,       &audio_adsr_on,         0,0,    0,0};
-AL_Instrument audio_instrument_triangle={ audio_triangle_sampler,   &audio_adsr_on,         0,0,    0,0};
-AL_Instrument audio_instrument_square = { audio_square_sampler,     &audio_adsr_on,         0,0,    0,0};
-AL_Instrument audio_instrument_sawtooth={ audio_sawtooth_sampler,   &audio_adsr_on,         0,0,    0,0};
-AL_Instrument audio_instrument_4octave_sine= { audio_4octave_sine_sampler,&audio_adsr_on,   0,0,    0,0};
-AL_Instrument audio_instrument_4octave_sawtooth= { audio_4octave_mix_sampler,&audio_adsr_on,0,0,    0,0};
+const AL_Instrument audio_instrument_sine =   { audio_sine_sampler,       (AL_ADSR *) &audio_adsr_on,         0,0,    0,0};
+const AL_Instrument audio_instrument_triangle={ audio_triangle_sampler,   (AL_ADSR *) &audio_adsr_on,         0,0,    0,0};
+const AL_Instrument audio_instrument_square = { audio_square_sampler,     (AL_ADSR *) &audio_adsr_on,         0,0,    0,0};
+const AL_Instrument audio_instrument_sawtooth={ audio_sawtooth_sampler,   (AL_ADSR *) &audio_adsr_on,         0,0,    0,0};
+const AL_Instrument audio_instrument_4octave_sine= { audio_4octave_sine_sampler,(AL_ADSR *) &audio_adsr_on,   0,0,    0,0};
+const AL_Instrument audio_instrument_4octave_sawtooth= { audio_4octave_mix_sampler,(AL_ADSR *) &audio_adsr_on,0,0,    0,0};
 
-AL_Instrument audio_instrument_piano =  { audio_sine_sampler,       &audio_adsr_piano,      0,0,    0,0};
-AL_Instrument audio_instrument_organ =  { audio_triangle_sampler,   &audio_adsr_piano,      0,0,    0,0};
-AL_Instrument audio_instrument_fat_organ={ audio_4octave_mix_sampler,&audio_adsr_piano,   0,0,    0,0};
-AL_Instrument audio_instrument_synth =  { audio_sawtooth_sampler,   &audio_adsr_piano,      0,0,    0,0};
-AL_Instrument audio_instrument_8bit =   { audio_square_sampler,     &audio_adsr_8bit,       0,0,    0,0};
-AL_Instrument audio_instrument_vibraphone={ audio_sine_sampler,     &audio_adsr_piano,      4<<4,1<<4,    2<<4,1<<4};
+const AL_Instrument audio_instrument_piano =  { audio_sine_sampler,       (AL_ADSR *) &audio_adsr_piano,      0,0,    0,0};
+const AL_Instrument audio_instrument_organ =  { audio_triangle_sampler,   (AL_ADSR *) &audio_adsr_piano,      0,0,    0,0};
+const AL_Instrument audio_instrument_fat_organ={ audio_4octave_mix_sampler,(AL_ADSR *) &audio_adsr_piano,   0,0,    0,0};
+const AL_Instrument audio_instrument_synth =  { audio_sawtooth_sampler,   (AL_ADSR *) &audio_adsr_piano,      0,0,    0,0};
+const AL_Instrument audio_instrument_8bit =   { audio_square_sampler,     (AL_ADSR *) &audio_adsr_8bit,       0,0,    0,0};
+const AL_Instrument audio_instrument_vibraphone={ audio_sine_sampler,     (AL_ADSR *) &audio_adsr_piano,      4<<4,1<<4,    2<<4,1<<4};
 
-AL_Instrument audio_instrument_violin = { audio_sawtooth_sampler,   &audio_adsr_violin,     48,4,    32,4};
-//AL_Instrument audio_instrument_violin = { audio_sawtooth_sampler,   &audio_adsr_violin,     4<<4,1<<4,    2<<4,1<<4};
+const AL_Instrument audio_instrument_violin = { audio_sawtooth_sampler,   (AL_ADSR *) &audio_adsr_violin,     48,4,    32,4};
+//const AL_Instrument audio_instrument_violin = { audio_sawtooth_sampler,   &audio_adsr_violin,     4<<4,1<<4,    2<<4,1<<4};
 
-AL_Instrument audio_instrument_drum =   { audio_noise2_sampler,     &audio_adsr_piano,      0,0,    0,0};
-AL_Instrument audio_instrument_hihat =  { audio_noise2_sampler,     &audio_adsr_hihat,      5<<4,-1<<4,   0,0};
-AL_Instrument audio_instrument_snare =  { audio_noise2_sampler,     &audio_adsr_tom,        1000<<4,-1,0,0};
-AL_Instrument audio_instrument_cymbol = { audio_noise2_sampler,     &audio_adsr_cymbol,     50<<4,-5<<4,  0,0};
-AL_Instrument audio_instrument_tom =    { audio_sine_sampler,       &audio_adsr_tom,        100<<4,-1<<4, 0,0};
+const AL_Instrument audio_instrument_drum =   { audio_noise2_sampler,     (AL_ADSR *) &audio_adsr_piano,      0,0,    0,0};
+const AL_Instrument audio_instrument_hihat =  { audio_noise2_sampler,     (AL_ADSR *) &audio_adsr_hihat,      5<<4,-1<<4,   0,0};
+const AL_Instrument audio_instrument_snare =  { audio_noise2_sampler,     (AL_ADSR *) &audio_adsr_tom,        1000<<4,-1,0,0};
+const AL_Instrument audio_instrument_cymbol = { audio_noise2_sampler,     (AL_ADSR *) &audio_adsr_cymbol,     50<<4,-5<<4,  0,0};
+const AL_Instrument audio_instrument_tom =    { audio_sine_sampler,       (AL_ADSR *) &audio_adsr_tom,        100<<4,-1<<4, 0,0};
 
-AL_Instrument audio_instrument_flute =  { audio_triangle_sampler,   &audio_adsr_flute,      4<<4,1<<4,    2<<4,1<<4};
-AL_Instrument audio_instrument_sax =    { audio_triangle_sampler,   &audio_adsr_sax,        4<<4,1<<4,    2<<4,1<<4};
+const AL_Instrument audio_instrument_flute =  { audio_triangle_sampler,   (AL_ADSR *) &audio_adsr_flute,      4<<4,1<<4,    2<<4,1<<4};
+const AL_Instrument audio_instrument_sax =    { audio_sawtooth_sampler,   (AL_ADSR *) &audio_adsr_sax,        4<<4,1<<4,    2<<4,1<<4};
 
-AL_Instrument audio_instrument_bubble ={ audio_sine_sampler,&audio_adsr_tom,-1,10,0,0};
+const AL_Instrument audio_instrument_xylophone={ audio_sine_sampler,       (AL_ADSR *) &audio_adsr_tom,-1,10,0,0};
 
 // Multiply an 8 bit unsigned volume by an 8 bit signed sample, returning a signed modulated sample
 int16_t audio_volume_sample_multiply(uint16_t u,int16_t s)
