@@ -18,7 +18,7 @@
 #if 0
 //  4 voice presets
 //  The PWM frequency and the audio playback update frequency
-#   #define AUDIO_UPDATE_FREQUENCY (22000)
+#   define AUDIO_UPDATE_FREQUENCY (22000)
 //  Audio voices power of 2, actual voices are 2^AUDIO_VOICES_POW2
 //  Examples:
 //  AUDIO_VOICES_POW2 (0) => 1 voice

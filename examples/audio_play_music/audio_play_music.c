@@ -193,14 +193,14 @@ int main()
 	SystemInit();
 	Delay_Ms( 100 );
 
-	printf("\r\r\n\naudio_play_song example\n\r");
+	printf("\r\r\n\naudio_play_music example\n\r");
 
 	// init TIM1 for PWM
 	printf("initializing tim1...");
 	t1pwm_init();
 	printf("done.\n\r");
 		
-	// Initializ audio system
+	// Initialize audio system
 	printf("initializing audio system...");
 	audio_initialize();
 
